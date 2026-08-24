@@ -1,9 +1,23 @@
 "use client";
 
-import { ChangeEvent, useEffect, useMemo, useState } from "react";
+import {
+  ChangeEvent,
+  useEffect,
+  useMemo,
+  useState,
+} from "react";
+
+import { Shield, Trash2 } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 
 type Campeonato = {
+  id: number;
+  nome: string;
+  ano: number | null;
+  temporada: string | null;
+};
+
+type CampeonatoRelacionado = {
   id: number;
   nome: string;
   ano: number | null;
@@ -18,41 +32,28 @@ type Time = {
   escudo_url: string | null;
   campeonato_id: number | null;
   campeonato:
-    | {
-        id: number;
-        nome: string;
-        ano: number | null;
-        temporada: string | null;
-      }
+    | CampeonatoRelacionado
+    | CampeonatoRelacionado[]
     | null;
 };
 
 export default function AdminTimesPage() {
   const [campeonatos, setCampeonatos] = useState<Campeonato[]>([]);
   const [times, setTimes] = useState<Time[]>([]);
-
   const [campeonatoId, setCampeonatoId] = useState("");
   const [filtroCampeonatoId, setFiltroCampeonatoId] = useState("");
-
   const [nome, setNome] = useState("");
   const [sigla, setSigla] = useState("");
   const [cidade, setCidade] = useState("");
-
   const [escudo, setEscudo] = useState<File | null>(null);
   const [previewEscudo, setPreviewEscudo] = useState<string | null>(null);
-
   const [mensagem, setMensagem] = useState("");
   const [carregando, setCarregando] = useState(false);
 
   async function carregarCampeonatos() {
     const { data, error } = await supabase
       .from("campeonatos")
-      .select(`
-        id,
-        nome,
-        ano,
-        temporada
-      `)
+      .select("id, nome, ano, temporada")
       .order("ano", { ascending: false })
       .order("nome", { ascending: true });
 
@@ -75,7 +76,6 @@ export default function AdminTimesPage() {
         cidade,
         escudo_url,
         campeonato_id,
-
         campeonato:campeonatos (
           id,
           nome,
@@ -97,7 +97,26 @@ export default function AdminTimesPage() {
   useEffect(() => {
     carregarCampeonatos();
     carregarTimes();
+
+    const params = new URLSearchParams(window.location.search);
+    const campeonatoUrl = params.get("campeonato") || "";
+
+    if (campeonatoUrl) {
+      setCampeonatoId(campeonatoUrl);
+      setFiltroCampeonatoId(campeonatoUrl);
+    }
   }, []);
+
+  const campeonatoSelecionado = useMemo(() => {
+    if (!campeonatoId) return null;
+
+    return (
+      campeonatos.find(
+        (campeonato) =>
+          Number(campeonato.id) === Number(campeonatoId)
+      ) ?? null
+    );
+  }, [campeonatos, campeonatoId]);
 
   const timesFiltrados = useMemo(() => {
     if (!filtroCampeonatoId) {
@@ -110,13 +129,40 @@ export default function AdminTimesPage() {
     );
   }, [times, filtroCampeonatoId]);
 
-  function selecionarEscudo(
-    event: ChangeEvent<HTMLInputElement>
-  ) {
+  function obterCampeonato(time: Time): CampeonatoRelacionado | null {
+    if (!time.campeonato) return null;
+
+    if (Array.isArray(time.campeonato)) {
+      return time.campeonato[0] ?? null;
+    }
+
+    return time.campeonato;
+  }
+
+  function nomeCampeonato(time: Time) {
+    const campeonato = obterCampeonato(time);
+
+    if (!campeonato) {
+      return "Sem campeonato";
+    }
+
+    const temporada = campeonato.ano ?? campeonato.temporada;
+
+    return temporada
+      ? `${campeonato.nome} • ${temporada}`
+      : campeonato.nome;
+  }
+
+  function selecionarEscudo(event: ChangeEvent<HTMLInputElement>) {
     const arquivo = event.target.files?.[0];
 
     if (!arquivo) {
       setEscudo(null);
+
+      if (previewEscudo) {
+        URL.revokeObjectURL(previewEscudo);
+      }
+
       setPreviewEscudo(null);
       return;
     }
@@ -141,9 +187,7 @@ export default function AdminTimesPage() {
   }
 
   async function enviarEscudo() {
-    if (!escudo) {
-      return null;
-    }
+    if (!escudo) return null;
 
     const extensao =
       escudo.name.split(".").pop()?.toLowerCase() || "png";
@@ -159,7 +203,11 @@ export default function AdminTimesPage() {
       });
 
     if (error) {
-      throw new Error(error.message);
+      console.error("Erro no upload do escudo:", error);
+
+      throw new Error(
+        `Falha ao enviar escudo: ${error.message}`
+      );
     }
 
     const { data } = supabase.storage
@@ -217,7 +265,7 @@ export default function AdminTimesPage() {
       }
 
       setPreviewEscudo(null);
-
+      setFiltroCampeonatoId(campeonatoId);
       setMensagem("Time cadastrado com sucesso.");
 
       await carregarTimes();
@@ -244,21 +292,22 @@ export default function AdminTimesPage() {
     const time = times.find((item) => item.id === id);
 
     if (time?.escudo_url) {
-      const marcador =
-        "/storage/v1/object/public/escudos/";
-
-      const posicao =
-        time.escudo_url.indexOf(marcador);
+      const marcador = "/storage/v1/object/public/escudos/";
+      const posicao = time.escudo_url.indexOf(marcador);
 
       if (posicao !== -1) {
-        const caminho =
-          time.escudo_url.substring(
-            posicao + marcador.length
-          );
+        const caminho = time.escudo_url.substring(
+          posicao + marcador.length
+        );
 
-        await supabase.storage
-          .from("escudos")
-          .remove([caminho]);
+        const { error: storageError } =
+          await supabase.storage
+            .from("escudos")
+            .remove([caminho]);
+
+        if (storageError) {
+          console.error("Erro ao excluir escudo:", storageError);
+        }
       }
     }
 
@@ -274,30 +323,14 @@ export default function AdminTimesPage() {
     }
 
     setMensagem("Time excluído com sucesso.");
-
     await carregarTimes();
   }
 
-  function nomeCampeonato(time: Time) {
-    if (!time.campeonato) {
-      return "Sem campeonato";
-    }
-
-    const temporada =
-      time.campeonato.ano ??
-      time.campeonato.temporada;
-
-    return temporada
-      ? `${time.campeonato.nome} • ${temporada}`
-      : time.campeonato.nome;
-  }
-
   return (
-    <main className="min-h-screen bg-[#07140B] px-4 py-8 text-white sm:px-6 lg:px-8">
+    <main className="min-h-screen px-4 py-8 text-white sm:px-6 lg:px-8">
       <div className="mx-auto max-w-7xl">
-
         <div className="mb-8">
-          <p className="text-sm font-bold uppercase tracking-[0.22em] text-[#34C759]">
+          <p className="text-sm font-bold uppercase tracking-[0.22em] text-[#18C929]">
             FJU Esportes
           </p>
 
@@ -305,20 +338,33 @@ export default function AdminTimesPage() {
             Times
           </h1>
 
-          <p className="mt-2 text-sm text-white/50 sm:text-base">
-            Cadastre os times e vincule cada um ao campeonato correto.
+          <p className="mt-2 max-w-2xl text-sm text-white/50 sm:text-base">
+            Cadastre os times e vincule cada equipe ao campeonato correto.
           </p>
+
+          {campeonatoSelecionado && (
+            <div className="mt-4 inline-flex items-center gap-2 rounded-full border border-[#18C929]/20 bg-[#18C929]/10 px-3 py-1.5 text-xs font-bold text-[#18C929]">
+              Campeonato selecionado:
+              <span className="text-white">
+                {campeonatoSelecionado.nome}
+              </span>
+            </div>
+          )}
         </div>
 
         <div className="grid gap-6 lg:grid-cols-[420px_1fr]">
+          <section className="rounded-3xl border border-white/[0.08] bg-[#0D1F12] p-5 sm:p-6">
+            <div className="flex items-center gap-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#18C929]/10 text-[#18C929]">
+                <Shield size={21} />
+              </div>
 
-          <section className="rounded-3xl border border-white/10 bg-[#0D1F12] p-5 sm:p-6">
-            <h2 className="text-xl font-bold">
-              Cadastrar time
-            </h2>
+              <h2 className="text-xl font-black">
+                Cadastrar time
+              </h2>
+            </div>
 
             <div className="mt-6 space-y-5">
-
               <div>
                 <label className="mb-2 block text-sm text-white/60">
                   Campeonato
@@ -326,10 +372,11 @@ export default function AdminTimesPage() {
 
                 <select
                   value={campeonatoId}
-                  onChange={(e) =>
-                    setCampeonatoId(e.target.value)
-                  }
-                  className="w-full rounded-xl border border-white/10 bg-[#17351D] px-4 py-3 text-white outline-none focus:border-[#34C759]"
+                  onChange={(e) => {
+                    setCampeonatoId(e.target.value);
+                    setFiltroCampeonatoId(e.target.value);
+                  }}
+                  className="w-full rounded-xl border border-white/10 bg-[#17351D] px-4 py-3 text-white outline-none focus:border-[#18C929]"
                 >
                   <option value="">
                     Selecione o campeonato
@@ -349,12 +396,6 @@ export default function AdminTimesPage() {
                     </option>
                   ))}
                 </select>
-
-                {campeonatos.length === 0 && (
-                  <p className="mt-2 text-xs text-amber-300">
-                    Cadastre primeiro um campeonato.
-                  </p>
-                )}
               </div>
 
               <div>
@@ -365,11 +406,9 @@ export default function AdminTimesPage() {
                 <input
                   type="text"
                   value={nome}
-                  onChange={(e) =>
-                    setNome(e.target.value)
-                  }
+                  onChange={(e) => setNome(e.target.value)}
                   placeholder="Ex: FJU Central"
-                  className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-white outline-none placeholder:text-white/25 focus:border-[#34C759]"
+                  className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 outline-none placeholder:text-white/25 focus:border-[#18C929]"
                 />
               </div>
 
@@ -382,13 +421,11 @@ export default function AdminTimesPage() {
                   type="text"
                   value={sigla}
                   onChange={(e) =>
-                    setSigla(
-                      e.target.value.toUpperCase()
-                    )
+                    setSigla(e.target.value.toUpperCase())
                   }
                   maxLength={5}
                   placeholder="Ex: FJC"
-                  className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-white outline-none placeholder:text-white/25 focus:border-[#34C759]"
+                  className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 outline-none placeholder:text-white/25 focus:border-[#18C929]"
                 />
               </div>
 
@@ -400,11 +437,9 @@ export default function AdminTimesPage() {
                 <input
                   type="text"
                   value={cidade}
-                  onChange={(e) =>
-                    setCidade(e.target.value)
-                  }
+                  onChange={(e) => setCidade(e.target.value)}
                   placeholder="Ex: Belo Horizonte"
-                  className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-white outline-none placeholder:text-white/25 focus:border-[#34C759]"
+                  className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 outline-none placeholder:text-white/25 focus:border-[#18C929]"
                 />
               </div>
 
@@ -413,7 +448,7 @@ export default function AdminTimesPage() {
                   Escudo
                 </label>
 
-                <label className="flex min-h-36 cursor-pointer items-center justify-center rounded-2xl border border-dashed border-white/15 bg-white/[0.03] p-5 text-center hover:bg-white/[0.06]">
+                <label className="flex min-h-40 cursor-pointer items-center justify-center rounded-2xl border border-dashed border-white/15 bg-white/[0.03] p-5 text-center transition hover:border-[#18C929]/30 hover:bg-white/[0.05]">
                   <input
                     type="file"
                     accept="image/*"
@@ -426,7 +461,7 @@ export default function AdminTimesPage() {
                       <img
                         src={previewEscudo}
                         alt="Prévia do escudo"
-                        className="h-24 w-24 object-contain"
+                        className="h-28 w-28 object-contain"
                       />
 
                       <span className="mt-3 text-sm text-white/50">
@@ -435,7 +470,12 @@ export default function AdminTimesPage() {
                     </div>
                   ) : (
                     <div>
-                      <p className="font-semibold">
+                      <Shield
+                        size={32}
+                        className="mx-auto text-[#18C929]"
+                      />
+
+                      <p className="mt-3 font-semibold">
                         Selecionar escudo
                       </p>
 
@@ -451,7 +491,7 @@ export default function AdminTimesPage() {
                 type="button"
                 onClick={cadastrarTime}
                 disabled={carregando}
-                className="w-full rounded-xl bg-[#00A500] px-4 py-3 font-black text-white transition hover:bg-[#14B814] disabled:opacity-50"
+                className="w-full rounded-xl bg-[#18C929] px-4 py-3 font-black text-black transition hover:bg-[#2DDF3B] disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {carregando
                   ? "Cadastrando..."
@@ -466,11 +506,10 @@ export default function AdminTimesPage() {
             </div>
           </section>
 
-          <section className="rounded-3xl border border-white/10 bg-[#0D1F12] p-5 sm:p-6">
-
+          <section className="rounded-3xl border border-white/[0.08] bg-[#0D1F12] p-5 sm:p-6">
             <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
               <div>
-                <h2 className="text-xl font-bold">
+                <h2 className="text-xl font-black">
                   Times cadastrados
                 </h2>
 
@@ -487,11 +526,9 @@ export default function AdminTimesPage() {
                 <select
                   value={filtroCampeonatoId}
                   onChange={(e) =>
-                    setFiltroCampeonatoId(
-                      e.target.value
-                    )
+                    setFiltroCampeonatoId(e.target.value)
                   }
-                  className="w-full rounded-xl border border-white/10 bg-[#17351D] px-4 py-3 text-sm outline-none focus:border-[#34C759]"
+                  className="w-full rounded-xl border border-white/10 bg-[#17351D] px-4 py-3 text-sm outline-none focus:border-[#18C929]"
                 >
                   <option value="">
                     Todos os campeonatos
@@ -510,8 +547,15 @@ export default function AdminTimesPage() {
             </div>
 
             {timesFiltrados.length === 0 ? (
-              <div className="rounded-2xl border border-dashed border-white/10 p-10 text-center text-white/40">
-                Nenhum time encontrado.
+              <div className="rounded-2xl border border-dashed border-white/10 p-10 text-center">
+                <Shield
+                  size={34}
+                  className="mx-auto text-white/20"
+                />
+
+                <p className="mt-3 text-white/40">
+                  Nenhum time encontrado.
+                </p>
               </div>
             ) : (
               <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
@@ -530,7 +574,7 @@ export default function AdminTimesPage() {
                           />
                         </div>
                       ) : (
-                        <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-white/10 font-black text-white/50">
+                        <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-[#18C929]/10 font-black text-[#18C929]">
                           {time.sigla?.slice(0, 3) || "FC"}
                         </div>
                       )}
@@ -540,7 +584,7 @@ export default function AdminTimesPage() {
                           {time.nome}
                         </h3>
 
-                        <p className="mt-1 text-xs text-[#34C759]">
+                        <p className="mt-1 text-xs font-semibold text-[#18C929]">
                           {nomeCampeonato(time)}
                         </p>
 
@@ -558,8 +602,9 @@ export default function AdminTimesPage() {
                       onClick={() =>
                         excluirTime(time.id)
                       }
-                      className="mt-4 w-full rounded-xl border border-red-400/20 bg-red-400/10 px-4 py-2 text-sm font-bold text-red-300 hover:bg-red-400/20"
+                      className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl border border-red-400/20 bg-red-400/10 px-4 py-2 text-sm font-semibold text-red-300 transition hover:bg-red-400/20"
                     >
+                      <Trash2 size={15} />
                       Excluir
                     </button>
                   </article>

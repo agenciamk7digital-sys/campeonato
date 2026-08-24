@@ -7,9 +7,21 @@ import {
   useState,
 } from "react";
 
+import {
+  Shield,
+  Trash2,
+} from "lucide-react";
+
 import { supabase } from "@/lib/supabase";
 
 type Campeonato = {
+  id: number;
+  nome: string;
+  ano: number | null;
+  temporada: string | null;
+};
+
+type CampeonatoRelacionado = {
   id: number;
   nome: string;
   ano: number | null;
@@ -20,55 +32,22 @@ type Time = {
   id: number;
   nome: string;
   sigla: string | null;
-  escudo_url: string | null;
-  campeonato_id: number | null;
-};
-
-type TimeRelacionado = {
-  id: number;
-  nome: string;
-  sigla: string | null;
+  cidade: string | null;
   escudo_url: string | null;
   campeonato_id: number | null;
 
   campeonato:
-    | {
-        id: number;
-        nome: string;
-        ano: number | null;
-        temporada: string | null;
-      }[]
+    | CampeonatoRelacionado
+    | CampeonatoRelacionado[]
     | null;
 };
 
-type Jogador = {
-  id: number;
-  nome: string;
-  numero: number | null;
-  posicao: string | null;
-  foto_url: string | null;
-  time_id: number | null;
-  times: TimeRelacionado[] | null;
-};
-
-const POSICOES = [
-  "Goleiro",
-  "Zagueiro",
-  "Lateral",
-  "Volante",
-  "Meia",
-  "Atacante",
-];
-
-export default function AdminJogadoresPage() {
+export default function AdminTimesPage() {
   const [campeonatos, setCampeonatos] =
     useState<Campeonato[]>([]);
 
   const [times, setTimes] =
     useState<Time[]>([]);
-
-  const [jogadores, setJogadores] =
-    useState<Jogador[]>([]);
 
   const [campeonatoId, setCampeonatoId] =
     useState("");
@@ -78,19 +57,17 @@ export default function AdminJogadoresPage() {
     setFiltroCampeonatoId,
   ] = useState("");
 
-  const [filtroTimeId, setFiltroTimeId] =
-    useState("");
-
   const [nome, setNome] = useState("");
-  const [numero, setNumero] = useState("");
-  const [posicao, setPosicao] = useState("");
-  const [timeId, setTimeId] = useState("");
+  const [sigla, setSigla] = useState("");
+  const [cidade, setCidade] = useState("");
 
-  const [foto, setFoto] =
+  const [escudo, setEscudo] =
     useState<File | null>(null);
 
-  const [previewFoto, setPreviewFoto] =
-    useState<string | null>(null);
+  const [
+    previewEscudo,
+    setPreviewEscudo,
+  ] = useState<string | null>(null);
 
   const [mensagem, setMensagem] =
     useState("");
@@ -107,8 +84,12 @@ export default function AdminJogadoresPage() {
         ano,
         temporada
       `)
-      .order("ano", { ascending: false })
-      .order("nome", { ascending: true });
+      .order("ano", {
+        ascending: false,
+      })
+      .order("nome", {
+        ascending: true,
+      });
 
     if (error) {
       console.error(
@@ -133,10 +114,20 @@ export default function AdminJogadoresPage() {
         id,
         nome,
         sigla,
+        cidade,
         escudo_url,
-        campeonato_id
+        campeonato_id,
+
+        campeonato:campeonatos (
+          id,
+          nome,
+          ano,
+          temporada
+        )
       `)
-      .order("nome", { ascending: true });
+      .order("nome", {
+        ascending: true,
+      });
 
     if (error) {
       console.error(
@@ -151,168 +142,139 @@ export default function AdminJogadoresPage() {
       return;
     }
 
-    setTimes(data ?? []);
-  }
-
-  async function carregarJogadores() {
-    const { data, error } = await supabase
-      .from("jogadores")
-      .select(`
-        id,
-        nome,
-        numero,
-        posicao,
-        foto_url,
-        time_id,
-
-        times (
-          id,
-          nome,
-          sigla,
-          escudo_url,
-          campeonato_id,
-
-          campeonato:campeonatos (
-            id,
-            nome,
-            ano,
-            temporada
-          )
-        )
-      `)
-      .order("nome", { ascending: true });
-
-    if (error) {
-      console.error(
-        "Erro ao carregar jogadores:",
-        error
-      );
-
-      setMensagem(
-        `Erro ao carregar jogadores: ${error.message}`
-      );
-
-      return;
-    }
-
-    setJogadores(
-      (data ?? []) as unknown as Jogador[]
+    setTimes(
+      (data ?? []) as unknown as Time[]
     );
   }
 
   useEffect(() => {
     carregarCampeonatos();
     carregarTimes();
-    carregarJogadores();
+
+    const parametros =
+      new URLSearchParams(
+        window.location.search
+      );
+
+    const campeonatoUrl =
+      parametros.get("campeonato") || "";
+
+    if (campeonatoUrl) {
+      setCampeonatoId(
+        campeonatoUrl
+      );
+
+      setFiltroCampeonatoId(
+        campeonatoUrl
+      );
+    }
   }, []);
 
-  const timesDoCampeonato = useMemo(() => {
-    if (!campeonatoId) {
-      return [];
-    }
+  const campeonatoSelecionado =
+    useMemo(() => {
+      if (!campeonatoId) {
+        return null;
+      }
 
-    return times.filter(
-      (time) =>
-        Number(time.campeonato_id) ===
-        Number(campeonatoId)
-    );
-  }, [times, campeonatoId]);
+      return (
+        campeonatos.find(
+          (campeonato) =>
+            Number(
+              campeonato.id
+            ) ===
+            Number(
+              campeonatoId
+            )
+        ) ?? null
+      );
+    }, [
+      campeonatos,
+      campeonatoId,
+    ]);
 
-  const timesDoFiltro = useMemo(() => {
-    if (!filtroCampeonatoId) {
-      return times;
-    }
+  const timesFiltrados =
+    useMemo(() => {
+      if (!filtroCampeonatoId) {
+        return times;
+      }
 
-    return times.filter(
-      (time) =>
-        Number(time.campeonato_id) ===
-        Number(filtroCampeonatoId)
-    );
-  }, [times, filtroCampeonatoId]);
-
-  function obterTime(jogador: Jogador) {
-    if (
-      !jogador.times ||
-      jogador.times.length === 0
-    ) {
-      return null;
-    }
-
-    return jogador.times[0];
-  }
+      return times.filter(
+        (time) =>
+          Number(
+            time.campeonato_id
+          ) ===
+          Number(
+            filtroCampeonatoId
+          )
+      );
+    }, [
+      times,
+      filtroCampeonatoId,
+    ]);
 
   function obterCampeonato(
-    jogador: Jogador
-  ) {
-    const time = obterTime(jogador);
-
-    if (
-      !time?.campeonato ||
-      time.campeonato.length === 0
-    ) {
+    time: Time
+  ): CampeonatoRelacionado | null {
+    if (!time.campeonato) {
       return null;
     }
 
-    return time.campeonato[0];
+    if (
+      Array.isArray(
+        time.campeonato
+      )
+    ) {
+      return (
+        time.campeonato[0] ??
+        null
+      );
+    }
+
+    return time.campeonato;
   }
 
-  const jogadoresFiltrados = useMemo(() => {
-    return jogadores.filter((jogador) => {
-      const time = obterTime(jogador);
-
-      if (
-        filtroCampeonatoId &&
-        Number(time?.campeonato_id) !==
-          Number(filtroCampeonatoId)
-      ) {
-        return false;
-      }
-
-      if (
-        filtroTimeId &&
-        Number(jogador.time_id) !==
-          Number(filtroTimeId)
-      ) {
-        return false;
-      }
-
-      return true;
-    });
-  }, [
-    jogadores,
-    filtroCampeonatoId,
-    filtroTimeId,
-  ]);
-
-  function selecionarCampeonato(
-    valor: string
+  function nomeCampeonato(
+    time: Time
   ) {
-    setCampeonatoId(valor);
-    setTimeId("");
-    setMensagem("");
+    const campeonato =
+      obterCampeonato(time);
+
+    if (!campeonato) {
+      return "Sem campeonato";
+    }
+
+    const temporada =
+      campeonato.ano ??
+      campeonato.temporada;
+
+    return temporada
+      ? `${campeonato.nome} • ${temporada}`
+      : campeonato.nome;
   }
 
-  function selecionarFiltroCampeonato(
-    valor: string
-  ) {
-    setFiltroCampeonatoId(valor);
-    setFiltroTimeId("");
-  }
-
-  function selecionarFoto(
+  function selecionarEscudo(
     event: ChangeEvent<HTMLInputElement>
   ) {
     const arquivo =
       event.target.files?.[0];
 
     if (!arquivo) {
-      setFoto(null);
-      setPreviewFoto(null);
+      setEscudo(null);
+
+      if (previewEscudo) {
+        URL.revokeObjectURL(
+          previewEscudo
+        );
+      }
+
+      setPreviewEscudo(null);
       return;
     }
 
     if (
-      !arquivo.type.startsWith("image/")
+      !arquivo.type.startsWith(
+        "image/"
+      )
     ) {
       setMensagem(
         "Selecione uma imagem válida."
@@ -321,65 +283,84 @@ export default function AdminJogadoresPage() {
       return;
     }
 
-    const limite =
-      5 * 1024 * 1024;
-
-    if (arquivo.size > limite) {
+    if (
+      arquivo.size >
+      5 * 1024 * 1024
+    ) {
       setMensagem(
-        "A foto deve ter no máximo 5 MB."
+        "O escudo deve ter no máximo 5 MB."
       );
 
       return;
     }
 
-    if (previewFoto) {
-      URL.revokeObjectURL(previewFoto);
+    if (previewEscudo) {
+      URL.revokeObjectURL(
+        previewEscudo
+      );
     }
 
-    setFoto(arquivo);
+    setEscudo(arquivo);
 
-    setPreviewFoto(
-      URL.createObjectURL(arquivo)
+    setPreviewEscudo(
+      URL.createObjectURL(
+        arquivo
+      )
     );
 
     setMensagem("");
   }
 
-  async function enviarFoto() {
-    if (!foto) {
+  async function enviarEscudo() {
+    if (!escudo) {
       return null;
     }
 
     const extensao =
-      foto.name
+      escudo.name
         .split(".")
         .pop()
-        ?.toLowerCase() || "jpg";
+        ?.toLowerCase() ||
+      "png";
 
     const nomeArquivo =
       `${Date.now()}-${crypto.randomUUID()}.${extensao}`;
 
     const { error } =
       await supabase.storage
-        .from("jogadores")
-        .upload(nomeArquivo, foto, {
-          cacheControl: "3600",
-          upsert: false,
-        });
+        .from("escudos")
+        .upload(
+          nomeArquivo,
+          escudo,
+          {
+            cacheControl:
+              "3600",
+            upsert: false,
+          }
+        );
 
     if (error) {
-      throw new Error(error.message);
+      console.error(
+        "Erro no upload do escudo:",
+        error
+      );
+
+      throw new Error(
+        `Falha ao enviar escudo: ${error.message}`
+      );
     }
 
     const { data } =
       supabase.storage
-        .from("jogadores")
-        .getPublicUrl(nomeArquivo);
+        .from("escudos")
+        .getPublicUrl(
+          nomeArquivo
+        );
 
     return data.publicUrl;
   }
 
-  async function cadastrarJogador() {
+  async function cadastrarTime() {
     setMensagem("");
 
     if (!campeonatoId) {
@@ -390,102 +371,49 @@ export default function AdminJogadoresPage() {
       return;
     }
 
-    if (!timeId) {
-      setMensagem(
-        "Selecione o time do jogador."
-      );
-
-      return;
-    }
-
     if (!nome.trim()) {
       setMensagem(
-        "Informe o nome do jogador."
+        "Informe o nome do time."
       );
 
       return;
-    }
-
-    if (!posicao) {
-      setMensagem(
-        "Selecione a posição do jogador."
-      );
-
-      return;
-    }
-
-    const timeSelecionado =
-      times.find(
-        (time) =>
-          Number(time.id) ===
-          Number(timeId)
-      );
-
-    if (!timeSelecionado) {
-      setMensagem(
-        "Time não encontrado."
-      );
-
-      return;
-    }
-
-    if (
-      Number(
-        timeSelecionado.campeonato_id
-      ) !== Number(campeonatoId)
-    ) {
-      setMensagem(
-        "Este time não pertence ao campeonato selecionado."
-      );
-
-      return;
-    }
-
-    if (numero) {
-      const numeroConvertido =
-        Number(numero);
-
-      if (
-        Number.isNaN(numeroConvertido) ||
-        numeroConvertido < 1 ||
-        numeroConvertido > 99
-      ) {
-        setMensagem(
-          "O número da camisa deve estar entre 1 e 99."
-        );
-
-        return;
-      }
     }
 
     setCarregando(true);
 
     try {
-      let fotoUrl:
+      let escudoUrl:
         | string
         | null = null;
 
-      if (foto) {
-        fotoUrl = await enviarFoto();
+      if (escudo) {
+        escudoUrl =
+          await enviarEscudo();
       }
 
       const { error } =
         await supabase
-          .from("jogadores")
+          .from("times")
           .insert([
             {
-              nome: nome.trim(),
+              campeonato_id:
+                Number(
+                  campeonatoId
+                ),
 
-              numero: numero
-                ? Number(numero)
-                : null,
+              nome:
+                nome.trim(),
 
-              posicao,
+              sigla:
+                sigla.trim() ||
+                null,
 
-              foto_url: fotoUrl,
+              cidade:
+                cidade.trim() ||
+                null,
 
-              time_id:
-                Number(timeId),
+              escudo_url:
+                escudoUrl,
             },
           ]);
 
@@ -496,37 +424,42 @@ export default function AdminJogadoresPage() {
       }
 
       setNome("");
-      setNumero("");
-      setPosicao("");
-      setTimeId("");
-      setFoto(null);
+      setSigla("");
+      setCidade("");
+      setEscudo(null);
 
-      if (previewFoto) {
+      if (previewEscudo) {
         URL.revokeObjectURL(
-          previewFoto
+          previewEscudo
         );
       }
 
-      setPreviewFoto(null);
+      setPreviewEscudo(null);
 
-      setMensagem(
-        "Jogador cadastrado com sucesso."
+      setFiltroCampeonatoId(
+        campeonatoId
       );
 
-      await carregarJogadores();
+      setMensagem(
+        "Time cadastrado com sucesso."
+      );
+
+      await carregarTimes();
     } catch (error) {
       console.error(
-        "Erro ao cadastrar jogador:",
+        "Erro ao cadastrar time:",
         error
       );
 
-      if (error instanceof Error) {
+      if (
+        error instanceof Error
+      ) {
         setMensagem(
           `Erro ao cadastrar: ${error.message}`
         );
       } else {
         setMensagem(
-          "Erro ao cadastrar jogador."
+          "Erro ao cadastrar time."
         );
       }
     } finally {
@@ -534,38 +467,41 @@ export default function AdminJogadoresPage() {
     }
   }
 
-  async function excluirJogador(
+  async function excluirTime(
     id: number
   ) {
     const confirmou =
       window.confirm(
-        "Tem certeza que deseja excluir este jogador?"
+        "Tem certeza que deseja excluir este time?"
       );
 
     if (!confirmou) {
       return;
     }
 
-    const jogador =
-      jogadores.find(
-        (item) => item.id === id
+    const time =
+      times.find(
+        (item) =>
+          item.id === id
       );
 
-    if (jogador?.foto_url) {
+    if (
+      time?.escudo_url
+    ) {
       const marcador =
-        "/storage/v1/object/public/jogadores/";
+        "/storage/v1/object/public/escudos/";
 
-      const posicaoMarcador =
-        jogador.foto_url.indexOf(
+      const posicao =
+        time.escudo_url.indexOf(
           marcador
         );
 
       if (
-        posicaoMarcador !== -1
+        posicao !== -1
       ) {
         const caminho =
-          jogador.foto_url.substring(
-            posicaoMarcador +
+          time.escudo_url.substring(
+            posicao +
               marcador.length
           );
 
@@ -573,12 +509,14 @@ export default function AdminJogadoresPage() {
           error: storageError,
         } =
           await supabase.storage
-            .from("jogadores")
-            .remove([caminho]);
+            .from("escudos")
+            .remove([
+              caminho,
+            ]);
 
         if (storageError) {
           console.error(
-            "Erro ao excluir foto:",
+            "Erro ao excluir escudo:",
             storageError
           );
         }
@@ -587,13 +525,13 @@ export default function AdminJogadoresPage() {
 
     const { error } =
       await supabase
-        .from("jogadores")
+        .from("times")
         .delete()
         .eq("id", id);
 
     if (error) {
       console.error(
-        "Erro ao excluir jogador:",
+        "Erro ao excluir time:",
         error
       );
 
@@ -605,59 +543,60 @@ export default function AdminJogadoresPage() {
     }
 
     setMensagem(
-      "Jogador excluído com sucesso."
+      "Time excluído com sucesso."
     );
 
-    await carregarJogadores();
-  }
-
-  function nomeCampeonato(
-    jogador: Jogador
-  ) {
-    const campeonato =
-      obterCampeonato(jogador);
-
-    if (!campeonato) {
-      return "Sem campeonato";
-    }
-
-    const temporada =
-      campeonato.ano ??
-      campeonato.temporada;
-
-    if (temporada) {
-      return `${campeonato.nome} • ${temporada}`;
-    }
-
-    return campeonato.nome;
+    await carregarTimes();
   }
 
   return (
-    <main className="min-h-screen bg-[#07140B] px-4 py-8 text-white sm:px-6 lg:px-8">
+    <main className="min-h-screen px-4 py-8 text-white sm:px-6 lg:px-8">
       <div className="mx-auto max-w-7xl">
 
         <div className="mb-8">
-          <p className="text-sm font-bold uppercase tracking-[0.22em] text-[#34C759]">
+          <p className="text-sm font-bold uppercase tracking-[0.22em] text-[#18C929]">
             FJU Esportes
           </p>
 
           <h1 className="mt-2 text-3xl font-black sm:text-4xl">
-            Jogadores
+            Times
           </h1>
 
           <p className="mt-2 max-w-2xl text-sm text-white/50 sm:text-base">
-            Cadastre jogadores por
-            campeonato e por time.
+            Cadastre os times e
+            vincule cada equipe ao
+            campeonato correto.
           </p>
+
+          {campeonatoSelecionado && (
+            <div className="mt-4 inline-flex items-center gap-2 rounded-full border border-[#18C929]/20 bg-[#18C929]/10 px-3 py-1.5 text-xs font-bold text-[#18C929]">
+              Campeonato
+              selecionado:
+
+              <span className="text-white">
+                {
+                  campeonatoSelecionado.nome
+                }
+              </span>
+            </div>
+          )}
         </div>
 
         <div className="grid gap-6 lg:grid-cols-[420px_1fr]">
 
-          <section className="rounded-3xl border border-white/10 bg-[#0D1F12] p-5 sm:p-6">
+          <section className="rounded-3xl border border-white/[0.08] bg-[#0D1F12] p-5 sm:p-6">
 
-            <h2 className="text-xl font-bold">
-              Cadastrar jogador
-            </h2>
+            <div className="flex items-center gap-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#18C929]/10 text-[#18C929]">
+                <Shield
+                  size={21}
+                />
+              </div>
+
+              <h2 className="text-xl font-black">
+                Cadastrar time
+              </h2>
+            </div>
 
             <div className="mt-6 space-y-5">
 
@@ -667,16 +606,23 @@ export default function AdminJogadoresPage() {
                 </label>
 
                 <select
-                  value={campeonatoId}
-                  onChange={(e) =>
-                    selecionarCampeonato(
-                      e.target.value
-                    )
+                  value={
+                    campeonatoId
                   }
-                  className="w-full rounded-xl border border-white/10 bg-[#17351D] px-4 py-3 text-white outline-none focus:border-[#34C759]"
+                  onChange={(e) => {
+                    setCampeonatoId(
+                      e.target.value
+                    );
+
+                    setFiltroCampeonatoId(
+                      e.target.value
+                    );
+                  }}
+                  className="w-full rounded-xl border border-white/10 bg-[#17351D] px-4 py-3 text-white outline-none focus:border-[#18C929]"
                 >
                   <option value="">
-                    Selecione o campeonato
+                    Selecione o
+                    campeonato
                   </option>
 
                   {campeonatos.map(
@@ -689,7 +635,9 @@ export default function AdminJogadoresPage() {
                           campeonato.id
                         }
                       >
-                        {campeonato.nome}
+                        {
+                          campeonato.nome
+                        }
 
                         {campeonato.ano
                           ? ` - ${campeonato.ano}`
@@ -704,53 +652,7 @@ export default function AdminJogadoresPage() {
 
               <div>
                 <label className="mb-2 block text-sm text-white/60">
-                  Time
-                </label>
-
-                <select
-                  value={timeId}
-                  onChange={(e) =>
-                    setTimeId(
-                      e.target.value
-                    )
-                  }
-                  disabled={!campeonatoId}
-                  className="w-full rounded-xl border border-white/10 bg-[#17351D] px-4 py-3 text-white outline-none focus:border-[#34C759] disabled:cursor-not-allowed disabled:opacity-40"
-                >
-                  <option value="">
-                    Selecione o time
-                  </option>
-
-                  {timesDoCampeonato.map(
-                    (time) => (
-                      <option
-                        key={time.id}
-                        value={time.id}
-                      >
-                        {time.nome}
-
-                        {time.sigla
-                          ? ` (${time.sigla})`
-                          : ""}
-                      </option>
-                    )
-                  )}
-                </select>
-
-                {campeonatoId &&
-                  timesDoCampeonato.length ===
-                    0 && (
-                    <p className="mt-2 text-xs text-amber-300">
-                      Este campeonato
-                      ainda não possui
-                      times cadastrados.
-                    </p>
-                  )}
-              </div>
-
-              <div>
-                <label className="mb-2 block text-sm text-white/60">
-                  Nome
+                  Nome do time
                 </label>
 
                 <input
@@ -761,104 +663,94 @@ export default function AdminJogadoresPage() {
                       e.target.value
                     )
                   }
-                  placeholder="Ex: João Silva"
-                  className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 outline-none placeholder:text-white/25 focus:border-[#34C759]"
+                  placeholder="Ex: FJU Central"
+                  className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 outline-none placeholder:text-white/25 focus:border-[#18C929]"
                 />
-              </div>
-
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-
-                <div>
-                  <label className="mb-2 block text-sm text-white/60">
-                    Número
-                  </label>
-
-                  <input
-                    type="number"
-                    min="1"
-                    max="99"
-                    value={numero}
-                    onChange={(e) =>
-                      setNumero(
-                        e.target.value
-                      )
-                    }
-                    placeholder="10"
-                    className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 outline-none placeholder:text-white/25 focus:border-[#34C759]"
-                  />
-                </div>
-
-                <div>
-                  <label className="mb-2 block text-sm text-white/60">
-                    Posição
-                  </label>
-
-                  <select
-                    value={posicao}
-                    onChange={(e) =>
-                      setPosicao(
-                        e.target.value
-                      )
-                    }
-                    className="w-full rounded-xl border border-white/10 bg-[#17351D] px-4 py-3 outline-none focus:border-[#34C759]"
-                  >
-                    <option value="">
-                      Selecione
-                    </option>
-
-                    {POSICOES.map(
-                      (item) => (
-                        <option
-                          key={item}
-                          value={item}
-                        >
-                          {item}
-                        </option>
-                      )
-                    )}
-                  </select>
-                </div>
               </div>
 
               <div>
                 <label className="mb-2 block text-sm text-white/60">
-                  Foto
+                  Sigla
                 </label>
 
-                <label className="flex min-h-40 cursor-pointer items-center justify-center rounded-2xl border border-dashed border-white/15 bg-white/[0.03] p-5 text-center transition hover:bg-white/[0.06]">
+                <input
+                  type="text"
+                  value={sigla}
+                  onChange={(e) =>
+                    setSigla(
+                      e.target.value.toUpperCase()
+                    )
+                  }
+                  maxLength={5}
+                  placeholder="Ex: FJC"
+                  className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 outline-none placeholder:text-white/25 focus:border-[#18C929]"
+                />
+              </div>
 
+              <div>
+                <label className="mb-2 block text-sm text-white/60">
+                  Cidade
+                </label>
+
+                <input
+                  type="text"
+                  value={cidade}
+                  onChange={(e) =>
+                    setCidade(
+                      e.target.value
+                    )
+                  }
+                  placeholder="Ex: Belo Horizonte"
+                  className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 outline-none placeholder:text-white/25 focus:border-[#18C929]"
+                />
+              </div>
+
+              <div>
+                <label className="mb-2 block text-sm text-white/60">
+                  Escudo
+                </label>
+
+                <label className="flex min-h-40 cursor-pointer items-center justify-center rounded-2xl border border-dashed border-white/15 bg-white/[0.03] p-5 text-center transition hover:border-[#18C929]/30 hover:bg-white/[0.05]">
                   <input
                     type="file"
                     accept="image/*"
                     onChange={
-                      selecionarFoto
+                      selecionarEscudo
                     }
                     className="hidden"
                   />
 
-                  {previewFoto ? (
+                  {previewEscudo ? (
                     <div className="flex flex-col items-center">
+
                       <img
                         src={
-                          previewFoto
+                          previewEscudo
                         }
-                        alt="Prévia do jogador"
-                        className="h-28 w-28 rounded-2xl object-cover"
+                        alt="Prévia do escudo"
+                        className="h-28 w-28 object-contain"
                       />
 
                       <span className="mt-3 text-sm text-white/50">
-                        Clique para trocar
+                        Clique para
+                        trocar
                       </span>
                     </div>
                   ) : (
                     <div>
-                      <p className="font-semibold">
-                        Selecionar foto
+                      <Shield
+                        size={32}
+                        className="mx-auto text-[#18C929]"
+                      />
+
+                      <p className="mt-3 font-semibold">
+                        Selecionar
+                        escudo
                       </p>
 
                       <p className="mt-1 text-xs text-white/35">
-                        PNG, JPG ou WEBP
-                        • até 5 MB
+                        PNG, JPG ou
+                        WEBP • até 5 MB
                       </p>
                     </div>
                   )}
@@ -868,14 +760,16 @@ export default function AdminJogadoresPage() {
               <button
                 type="button"
                 onClick={
-                  cadastrarJogador
+                  cadastrarTime
                 }
-                disabled={carregando}
-                className="w-full rounded-xl bg-[#00A500] px-4 py-3 font-black text-white transition hover:bg-[#14B814] disabled:cursor-not-allowed disabled:opacity-50"
+                disabled={
+                  carregando
+                }
+                className="w-full rounded-xl bg-[#18C929] px-4 py-3 font-black text-black transition hover:bg-[#2DDF3B] disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {carregando
                   ? "Cadastrando..."
-                  : "Cadastrar jogador"}
+                  : "Cadastrar time"}
               </button>
 
               {mensagem && (
@@ -886,24 +780,25 @@ export default function AdminJogadoresPage() {
             </div>
           </section>
 
-          <section className="rounded-3xl border border-white/10 bg-[#0D1F12] p-5 sm:p-6">
+          <section className="rounded-3xl border border-white/[0.08] bg-[#0D1F12] p-5 sm:p-6">
 
-            <div className="mb-6">
-              <h2 className="text-xl font-bold">
-                Jogadores cadastrados
-              </h2>
-
-              <p className="mt-1 text-sm text-white/40">
-                {
-                  jogadoresFiltrados.length
-                }{" "}
-                jogador(es)
-              </p>
-            </div>
-
-            <div className="mb-6 grid gap-3 sm:grid-cols-2">
+            <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
 
               <div>
+                <h2 className="text-xl font-black">
+                  Times cadastrados
+                </h2>
+
+                <p className="mt-1 text-sm text-white/40">
+                  {
+                    timesFiltrados.length
+                  }{" "}
+                  time(s)
+                </p>
+              </div>
+
+              <div className="w-full sm:w-64">
+
                 <label className="mb-2 block text-xs text-white/40">
                   Filtrar campeonato
                 </label>
@@ -913,14 +808,15 @@ export default function AdminJogadoresPage() {
                     filtroCampeonatoId
                   }
                   onChange={(e) =>
-                    selecionarFiltroCampeonato(
+                    setFiltroCampeonatoId(
                       e.target.value
                     )
                   }
-                  className="w-full rounded-xl border border-white/10 bg-[#17351D] px-4 py-3 text-sm outline-none focus:border-[#34C759]"
+                  className="w-full rounded-xl border border-white/10 bg-[#17351D] px-4 py-3 text-sm outline-none focus:border-[#18C929]"
                 >
                   <option value="">
-                    Todos os campeonatos
+                    Todos os
+                    campeonatos
                   </option>
 
                   {campeonatos.map(
@@ -933,38 +829,9 @@ export default function AdminJogadoresPage() {
                           campeonato.id
                         }
                       >
-                        {campeonato.nome}
-                      </option>
-                    )
-                  )}
-                </select>
-              </div>
-
-              <div>
-                <label className="mb-2 block text-xs text-white/40">
-                  Filtrar time
-                </label>
-
-                <select
-                  value={filtroTimeId}
-                  onChange={(e) =>
-                    setFiltroTimeId(
-                      e.target.value
-                    )
-                  }
-                  className="w-full rounded-xl border border-white/10 bg-[#17351D] px-4 py-3 text-sm outline-none focus:border-[#34C759]"
-                >
-                  <option value="">
-                    Todos os times
-                  </option>
-
-                  {timesDoFiltro.map(
-                    (time) => (
-                      <option
-                        key={time.id}
-                        value={time.id}
-                      >
-                        {time.nome}
+                        {
+                          campeonato.nome
+                        }
                       </option>
                     )
                   )}
@@ -972,118 +839,93 @@ export default function AdminJogadoresPage() {
               </div>
             </div>
 
-            {jogadoresFiltrados.length ===
+            {timesFiltrados.length ===
             0 ? (
-              <div className="rounded-2xl border border-dashed border-white/10 p-10 text-center text-white/40">
-                Nenhum jogador
-                encontrado.
+              <div className="rounded-2xl border border-dashed border-white/10 p-10 text-center">
+
+                <Shield
+                  size={34}
+                  className="mx-auto text-white/20"
+                />
+
+                <p className="mt-3 text-white/40">
+                  Nenhum time encontrado.
+                </p>
               </div>
             ) : (
-              <div className="grid gap-3 xl:grid-cols-2">
+              <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
 
-                {jogadoresFiltrados.map(
-                  (jogador) => {
-                    const time =
-                      obterTime(
-                        jogador
-                      );
+                {timesFiltrados.map(
+                  (time) => (
+                    <article
+                      key={time.id}
+                      className="rounded-2xl border border-white/10 bg-white/[0.03] p-4"
+                    >
+                      <div className="flex items-center gap-4">
 
-                    return (
-                      <article
-                        key={
-                          jogador.id
-                        }
-                        className="rounded-2xl border border-white/10 bg-white/[0.03] p-4"
-                      >
-                        <div className="flex items-center gap-4">
+                        {time.escudo_url ? (
+                          <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-white/5 p-2">
 
-                          {jogador.foto_url ? (
                             <img
                               src={
-                                jogador.foto_url
+                                time.escudo_url
                               }
                               alt={
-                                jogador.nome
+                                time.nome
                               }
-                              className="h-16 w-16 shrink-0 rounded-2xl object-cover"
+                              className="h-full w-full object-contain"
                             />
-                          ) : (
-                            <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-white/10 text-xl font-black text-white/50">
-                              {jogador.numero ||
-                                "?"}
-                            </div>
-                          )}
-
-                          <div className="min-w-0 flex-1">
-
-                            <div className="flex flex-wrap items-center gap-2">
-
-                              <h3 className="truncate font-black">
-                                {
-                                  jogador.nome
-                                }
-                              </h3>
-
-                              {jogador.numero && (
-                                <span className="rounded-md bg-[#00A500]/15 px-2 py-1 text-xs font-bold text-[#34C759]">
-                                  #
-                                  {
-                                    jogador.numero
-                                  }
-                                </span>
-                              )}
-                            </div>
-
-                            <p className="mt-1 text-sm text-white/45">
-                              {jogador.posicao ||
-                                "Sem posição"}
-                            </p>
-
-                            {time && (
-                              <div className="mt-2 flex items-center gap-2">
-
-                                {time.escudo_url && (
-                                  <img
-                                    src={
-                                      time.escudo_url
-                                    }
-                                    alt={
-                                      time.nome
-                                    }
-                                    className="h-5 w-5 object-contain"
-                                  />
-                                )}
-
-                                <span className="truncate text-xs text-white/50">
-                                  {
-                                    time.nome
-                                  }
-                                </span>
-                              </div>
-                            )}
-
-                            <p className="mt-1 truncate text-xs font-semibold text-[#34C759]">
-                              {nomeCampeonato(
-                                jogador
-                              )}
-                            </p>
                           </div>
-                        </div>
+                        ) : (
+                          <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-[#18C929]/10 font-black text-[#18C929]">
+                            {time.sigla?.slice(
+                              0,
+                              3
+                            ) || "FC"}
+                          </div>
+                        )}
 
-                        <button
-                          type="button"
-                          onClick={() =>
-                            excluirJogador(
-                              jogador.id
-                            )
-                          }
-                          className="mt-4 w-full rounded-xl border border-red-400/20 bg-red-400/10 px-4 py-2 text-sm font-semibold text-red-300 transition hover:bg-red-400/20"
-                        >
-                          Excluir
-                        </button>
-                      </article>
-                    );
-                  }
+                        <div className="min-w-0">
+                          <h3 className="truncate font-black">
+                            {
+                              time.nome
+                            }
+                          </h3>
+
+                          <p className="mt-1 text-xs font-semibold text-[#18C929]">
+                            {nomeCampeonato(
+                              time
+                            )}
+                          </p>
+
+                          <p className="mt-1 text-xs text-white/40">
+                            {time.sigla ||
+                              "Sem sigla"}
+
+                            {time.cidade
+                              ? ` • ${time.cidade}`
+                              : ""}
+                          </p>
+                        </div>
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={() =>
+                          excluirTime(
+                            time.id
+                          )
+                        }
+                        className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl border border-red-400/20 bg-red-400/10 px-4 py-2 text-sm font-semibold text-red-300 transition hover:bg-red-400/20"
+                      >
+                        <Trash2
+                          size={15}
+                        />
+
+                        Excluir
+                      </button>
+                    </article>
+                  )
                 )}
               </div>
             )}

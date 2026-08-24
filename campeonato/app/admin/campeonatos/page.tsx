@@ -1,6 +1,9 @@
 "use client";
 
+import Link from "next/link";
 import { ChangeEvent, useEffect, useState } from "react";
+import { ChevronRight, Plus, Trophy, Trash2 } from "lucide-react";
+
 import { supabase } from "@/lib/supabase";
 
 type Campeonato = {
@@ -101,7 +104,11 @@ export default function AdminCampeonatosPage() {
       });
 
     if (error) {
-      throw new Error(error.message);
+      console.error("ERRO STORAGE:", error);
+
+      throw new Error(
+        `Falha ao enviar logo: ${error.message}`
+      );
     }
 
     const { data } = supabase.storage
@@ -214,10 +221,10 @@ export default function AdminCampeonatosPage() {
   }
 
   return (
-    <main className="min-h-screen bg-[#07140B] px-4 py-8 text-white sm:px-6 lg:px-8">
-      <div className="mx-auto max-w-7xl">
+    <main className="min-h-screen px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
+      <div className="mx-auto max-w-[1500px]">
         <div className="mb-8">
-          <p className="text-sm font-bold uppercase tracking-[0.22em] text-[#34C759]">
+          <p className="text-xs font-black uppercase tracking-[0.22em] text-[#18C929]">
             FJU Esportes
           </p>
 
@@ -225,47 +232,53 @@ export default function AdminCampeonatosPage() {
             Campeonatos
           </h1>
 
-          <p className="mt-2 max-w-2xl text-sm text-white/50 sm:text-base">
-            Cadastre e gerencie os campeonatos disponíveis na plataforma.
+          <p className="mt-2 max-w-2xl text-sm text-white/40">
+            Cadastre, gerencie e abra os campeonatos da plataforma.
           </p>
         </div>
 
         <div className="grid gap-6 lg:grid-cols-[420px_1fr]">
-          <section className="rounded-3xl border border-white/10 bg-[#0D1F12] p-5 sm:p-6">
-            <h2 className="text-xl font-bold">
-              Novo campeonato
-            </h2>
+          <section className="rounded-[24px] border border-white/[0.07] bg-[#080D09] p-5 sm:p-6">
+            <div className="flex items-center gap-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#18C929]/10 text-[#18C929]">
+                <Plus size={20} />
+              </div>
+
+              <h2 className="text-xl font-black">
+                Novo campeonato
+              </h2>
+            </div>
 
             <div className="mt-6 space-y-5">
               <div>
-                <label className="mb-2 block text-sm text-white/60">
+                <label className="mb-2 block text-sm text-white/55">
                   Nome
                 </label>
 
                 <input
                   value={nome}
                   onChange={(e) => setNome(e.target.value)}
-                  placeholder="Ex: Copa FJU 2026"
-                  className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 outline-none focus:border-[#34C759]"
+                  placeholder="Ex: Taça BH"
+                  className="w-full rounded-xl border border-white/10 bg-white/[0.04] px-4 py-3 outline-none focus:border-[#18C929]"
                 />
               </div>
 
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <div className="grid gap-4 sm:grid-cols-2">
                 <div>
-                  <label className="mb-2 block text-sm text-white/60">
+                  <label className="mb-2 block text-sm text-white/55">
                     Temporada
                   </label>
 
                   <input
                     value={temporada}
                     onChange={(e) => setTemporada(e.target.value)}
-                    placeholder="Ex: 2026"
-                    className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 outline-none focus:border-[#34C759]"
+                    placeholder="2026"
+                    className="w-full rounded-xl border border-white/10 bg-white/[0.04] px-4 py-3 outline-none focus:border-[#18C929]"
                   />
                 </div>
 
                 <div>
-                  <label className="mb-2 block text-sm text-white/60">
+                  <label className="mb-2 block text-sm text-white/55">
                     Ano
                   </label>
 
@@ -274,47 +287,42 @@ export default function AdminCampeonatosPage() {
                     value={ano}
                     onChange={(e) => setAno(e.target.value)}
                     placeholder="2026"
-                    className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 outline-none focus:border-[#34C759]"
+                    className="w-full rounded-xl border border-white/10 bg-white/[0.04] px-4 py-3 outline-none focus:border-[#18C929]"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="mb-2 block text-sm text-white/60">
+                <label className="mb-2 block text-sm text-white/55">
                   Descrição
                 </label>
 
                 <textarea
                   value={descricao}
                   onChange={(e) => setDescricao(e.target.value)}
-                  placeholder="Descrição do campeonato"
                   rows={4}
-                  className="w-full resize-none rounded-xl border border-white/10 bg-white/5 px-4 py-3 outline-none focus:border-[#34C759]"
+                  placeholder="Descrição do campeonato"
+                  className="w-full resize-none rounded-xl border border-white/10 bg-white/[0.04] px-4 py-3 outline-none focus:border-[#18C929]"
                 />
               </div>
 
               <div>
-                <label className="mb-2 block text-sm text-white/60">
+                <label className="mb-2 block text-sm text-white/55">
                   Status
                 </label>
 
                 <select
                   value={status}
                   onChange={(e) => setStatus(e.target.value)}
-                  className="w-full rounded-xl border border-white/10 bg-[#17351D] px-4 py-3 outline-none focus:border-[#34C759]"
+                  className="w-full rounded-xl border border-white/10 bg-[#101912] px-4 py-3 outline-none focus:border-[#18C929]"
                 >
-                  <option value="ativo">
-                    Ativo
-                  </option>
-
+                  <option value="ativo">Ativo</option>
                   <option value="em_andamento">
                     Em andamento
                   </option>
-
                   <option value="finalizado">
                     Finalizado
                   </option>
-
                   <option value="inativo">
                     Inativo
                   </option>
@@ -322,11 +330,11 @@ export default function AdminCampeonatosPage() {
               </div>
 
               <div>
-                <label className="mb-2 block text-sm text-white/60">
-                  Logo do campeonato
+                <label className="mb-2 block text-sm text-white/55">
+                  Logo
                 </label>
 
-                <label className="flex min-h-36 cursor-pointer items-center justify-center rounded-2xl border border-dashed border-white/15 bg-white/[0.03] p-5 text-center hover:bg-white/[0.06]">
+                <label className="flex min-h-40 cursor-pointer items-center justify-center rounded-2xl border border-dashed border-white/10 bg-white/[0.025] p-5 text-center transition hover:border-[#18C929]/30">
                   <input
                     type="file"
                     accept="image/*"
@@ -342,17 +350,22 @@ export default function AdminCampeonatosPage() {
                         className="h-24 w-24 object-contain"
                       />
 
-                      <span className="mt-3 text-sm text-white/50">
+                      <span className="mt-3 text-xs text-white/40">
                         Clique para trocar
                       </span>
                     </div>
                   ) : (
                     <div>
-                      <p className="font-semibold">
+                      <Trophy
+                        size={30}
+                        className="mx-auto text-[#18C929]"
+                      />
+
+                      <p className="mt-3 font-bold">
                         Selecionar logo
                       </p>
 
-                      <p className="mt-1 text-xs text-white/35">
+                      <p className="mt-1 text-xs text-white/30">
                         PNG, JPG ou WEBP • até 5 MB
                       </p>
                     </div>
@@ -364,7 +377,7 @@ export default function AdminCampeonatosPage() {
                 type="button"
                 onClick={cadastrarCampeonato}
                 disabled={carregando}
-                className="w-full rounded-xl bg-[#00A500] px-4 py-3 font-black text-white transition hover:bg-[#14B814] disabled:opacity-50"
+                className="w-full rounded-xl bg-[#18C929] px-4 py-3 font-black text-black transition hover:bg-[#2DDF3B] disabled:opacity-50"
               >
                 {carregando
                   ? "Cadastrando..."
@@ -372,26 +385,26 @@ export default function AdminCampeonatosPage() {
               </button>
 
               {mensagem && (
-                <div className="rounded-xl border border-white/10 bg-white/5 p-3 text-sm text-white/70">
+                <div className="rounded-xl border border-white/[0.07] bg-white/[0.03] p-3 text-sm text-white/65">
                   {mensagem}
                 </div>
               )}
             </div>
           </section>
 
-          <section className="rounded-3xl border border-white/10 bg-[#0D1F12] p-5 sm:p-6">
+          <section className="rounded-[24px] border border-white/[0.07] bg-[#080D09] p-5 sm:p-6">
             <div className="mb-6">
-              <h2 className="text-xl font-bold">
+              <h2 className="text-xl font-black">
                 Campeonatos cadastrados
               </h2>
 
-              <p className="mt-1 text-sm text-white/40">
+              <p className="mt-1 text-sm text-white/35">
                 {campeonatos.length} campeonato(s)
               </p>
             </div>
 
             {campeonatos.length === 0 ? (
-              <div className="rounded-2xl border border-dashed border-white/10 p-10 text-center text-white/40">
+              <div className="rounded-2xl border border-dashed border-white/[0.08] p-10 text-center text-white/30">
                 Nenhum campeonato cadastrado.
               </div>
             ) : (
@@ -399,9 +412,9 @@ export default function AdminCampeonatosPage() {
                 {campeonatos.map((campeonato) => (
                   <article
                     key={campeonato.id}
-                    className="rounded-2xl border border-white/10 bg-white/[0.03] p-5"
+                    className="group rounded-[20px] border border-white/[0.07] bg-white/[0.025] p-4 transition hover:border-[#18C929]/20"
                   >
-                    <div className="flex h-28 items-center justify-center rounded-2xl bg-white/5 p-3">
+                    <div className="flex h-32 items-center justify-center rounded-2xl bg-black/20 p-3">
                       {campeonato.logo_url ? (
                         <img
                           src={campeonato.logo_url}
@@ -409,36 +422,56 @@ export default function AdminCampeonatosPage() {
                           className="h-full w-full object-contain"
                         />
                       ) : (
-                        <span className="text-sm font-bold text-white/30">
-                          Sem logo
-                        </span>
+                        <Trophy
+                          size={40}
+                          className="text-[#18C929]/60"
+                        />
                       )}
                     </div>
 
-                    <h3 className="mt-4 text-lg font-black">
-                      {campeonato.nome}
-                    </h3>
+                    <div className="mt-4">
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="min-w-0">
+                          <h3 className="truncate text-lg font-black">
+                            {campeonato.nome}
+                          </h3>
 
-                    <p className="mt-1 text-sm text-white/45">
-                      {campeonato.ano || campeonato.temporada || "Sem temporada"}
-                    </p>
+                          <p className="mt-1 text-xs text-white/35">
+                            {campeonato.ano ||
+                              campeonato.temporada ||
+                              "Sem temporada"}
+                          </p>
+                        </div>
 
-                    {campeonato.descricao && (
-                      <p className="mt-3 line-clamp-3 text-sm text-white/45">
-                        {campeonato.descricao}
-                      </p>
-                    )}
+                        <span className="rounded-full bg-[#18C929]/10 px-2.5 py-1 text-[10px] font-black uppercase text-[#18C929]">
+                          {campeonato.status || "ativo"}
+                        </span>
+                      </div>
 
-                    <div className="mt-4 flex items-center justify-between gap-3">
-                      <span className="rounded-full bg-[#00A500]/15 px-3 py-1 text-xs font-bold text-[#34C759]">
-                        {campeonato.status || "ativo"}
-                      </span>
+                      {campeonato.descricao && (
+                        <p className="mt-3 line-clamp-2 text-sm leading-5 text-white/40">
+                          {campeonato.descricao}
+                        </p>
+                      )}
+                    </div>
+
+                    <div className="mt-5 space-y-2">
+                      <Link
+                        href={`/campeonatos/${campeonato.id}`}
+                        className="flex w-full items-center justify-between rounded-xl bg-[#18C929]/10 px-4 py-3 text-sm font-black text-[#18C929] transition hover:bg-[#18C929]/15"
+                      >
+                        Abrir campeonato
+                        <ChevronRight size={17} />
+                      </Link>
 
                       <button
                         type="button"
-                        onClick={() => excluirCampeonato(campeonato.id)}
-                        className="rounded-xl border border-red-400/20 bg-red-400/10 px-3 py-2 text-xs font-bold text-red-300 hover:bg-red-400/20"
+                        onClick={() =>
+                          excluirCampeonato(campeonato.id)
+                        }
+                        className="flex w-full items-center justify-center gap-2 rounded-xl border border-red-500/15 bg-red-500/[0.07] px-4 py-2.5 text-xs font-bold text-red-300 transition hover:bg-red-500/10"
                       >
+                        <Trash2 size={14} />
                         Excluir
                       </button>
                     </div>

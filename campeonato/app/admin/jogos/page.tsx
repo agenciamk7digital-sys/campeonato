@@ -1,6 +1,19 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import {
+  useEffect,
+  useMemo,
+  useState,
+} from "react";
+
+import {
+  CalendarDays,
+  MapPin,
+  Shield,
+  Trash2,
+  Trophy,
+} from "lucide-react";
+
 import { supabase } from "@/lib/supabase";
 
 type Campeonato = {
@@ -37,92 +50,177 @@ type TimeRelacionado = {
 type Jogo = {
   id: number;
   campeonato_id: number | null;
+
   time_casa_id: number;
   time_visitante_id: number;
+
   gols_casa: number | null;
   gols_visitante: number | null;
+
   data_jogo: string | null;
   horario: string | null;
   local: string | null;
   status: string | null;
 
-  campeonato: CampeonatoRelacionado | null;
-  time_casa: TimeRelacionado | null;
-  time_visitante: TimeRelacionado | null;
+  campeonato:
+    | CampeonatoRelacionado
+    | CampeonatoRelacionado[]
+    | null;
+
+  time_casa:
+    | TimeRelacionado
+    | TimeRelacionado[]
+    | null;
+
+  time_visitante:
+    | TimeRelacionado
+    | TimeRelacionado[]
+    | null;
 };
 
 const STATUS_OPCOES = [
-  { value: "agendado", label: "Agendado" },
-  { value: "em_andamento", label: "Em andamento" },
-  { value: "finalizado", label: "Finalizado" },
-  { value: "adiado", label: "Adiado" },
-  { value: "cancelado", label: "Cancelado" },
+  {
+    value: "agendado",
+    label: "Agendado",
+  },
+  {
+    value: "em_andamento",
+    label: "Em andamento",
+  },
+  {
+    value: "finalizado",
+    label: "Finalizado",
+  },
+  {
+    value: "adiado",
+    label: "Adiado",
+  },
+  {
+    value: "cancelado",
+    label: "Cancelado",
+  },
 ];
 
 export default function AdminJogosPage() {
-  const [campeonatos, setCampeonatos] = useState<Campeonato[]>([]);
-  const [times, setTimes] = useState<Time[]>([]);
-  const [jogos, setJogos] = useState<Jogo[]>([]);
+  const [campeonatos, setCampeonatos] =
+    useState<Campeonato[]>([]);
 
-  const [campeonatoId, setCampeonatoId] = useState("");
-  const [filtroCampeonatoId, setFiltroCampeonatoId] = useState("");
+  const [times, setTimes] =
+    useState<Time[]>([]);
 
-  const [timeCasaId, setTimeCasaId] = useState("");
-  const [timeVisitanteId, setTimeVisitanteId] = useState("");
+  const [jogos, setJogos] =
+    useState<Jogo[]>([]);
 
-  const [dataJogo, setDataJogo] = useState("");
-  const [horario, setHorario] = useState("");
-  const [local, setLocal] = useState("");
-  const [status, setStatus] = useState("agendado");
+  const [
+    campeonatoId,
+    setCampeonatoId,
+  ] = useState("");
 
-  const [mensagem, setMensagem] = useState("");
-  const [carregando, setCarregando] = useState(false);
+  const [
+    filtroCampeonatoId,
+    setFiltroCampeonatoId,
+  ] = useState("");
 
-  const [jogoResultadoId, setJogoResultadoId] =
-    useState<number | null>(null);
+  const [timeCasaId, setTimeCasaId] =
+    useState("");
 
-  const [golsCasa, setGolsCasa] = useState("");
-  const [golsVisitante, setGolsVisitante] = useState("");
+  const [
+    timeVisitanteId,
+    setTimeVisitanteId,
+  ] = useState("");
+
+  const [dataJogo, setDataJogo] =
+    useState("");
+
+  const [horario, setHorario] =
+    useState("");
+
+  const [local, setLocal] =
+    useState("");
+
+  const [status, setStatus] =
+    useState("agendado");
+
+  const [mensagem, setMensagem] =
+    useState("");
+
+  const [carregando, setCarregando] =
+    useState(false);
+
+  const [
+    jogoResultadoId,
+    setJogoResultadoId,
+  ] = useState<number | null>(null);
+
+  const [golsCasa, setGolsCasa] =
+    useState("");
+
+  const [
+    golsVisitante,
+    setGolsVisitante,
+  ] = useState("");
 
   async function carregarCampeonatos() {
-    const { data, error } = await supabase
-      .from("campeonatos")
-      .select(`
-        id,
-        nome,
-        ano,
-        temporada,
-        logo_url
-      `)
-      .order("ano", { ascending: false })
-      .order("nome", { ascending: true });
+    const { data, error } =
+      await supabase
+        .from("campeonatos")
+        .select(`
+          id,
+          nome,
+          ano,
+          temporada,
+          logo_url
+        `)
+        .order("ano", {
+          ascending: false,
+        })
+        .order("nome", {
+          ascending: true,
+        });
 
     if (error) {
-      console.error("Erro ao carregar campeonatos:", error);
+      console.error(
+        "Erro ao carregar campeonatos:",
+        error
+      );
+
       setMensagem(
         `Erro ao carregar campeonatos: ${error.message}`
       );
+
       return;
     }
 
-    setCampeonatos(data ?? []);
+    setCampeonatos(
+      data ?? []
+    );
   }
 
   async function carregarTimes() {
-    const { data, error } = await supabase
-      .from("times")
-      .select(`
-        id,
-        nome,
-        sigla,
-        escudo_url,
-        campeonato_id
-      `)
-      .order("nome", { ascending: true });
+    const { data, error } =
+      await supabase
+        .from("times")
+        .select(`
+          id,
+          nome,
+          sigla,
+          escudo_url,
+          campeonato_id
+        `)
+        .order("nome", {
+          ascending: true,
+        });
 
     if (error) {
-      console.error("Erro ao carregar times:", error);
-      setMensagem(`Erro ao carregar times: ${error.message}`);
+      console.error(
+        "Erro ao carregar times:",
+        error
+      );
+
+      setMensagem(
+        `Erro ao carregar times: ${error.message}`
+      );
+
       return;
     }
 
@@ -130,165 +228,385 @@ export default function AdminJogosPage() {
   }
 
   async function carregarJogos() {
-    const { data, error } = await supabase
-      .from("jogos")
-      .select(`
-        id,
-        campeonato_id,
-        time_casa_id,
-        time_visitante_id,
-        gols_casa,
-        gols_visitante,
-        data_jogo,
-        horario,
-        local,
-        status,
-
-        campeonato:campeonatos (
+    const { data, error } =
+      await supabase
+        .from("jogos")
+        .select(`
           id,
-          nome,
-          ano,
-          temporada,
-          logo_url
-        ),
+          campeonato_id,
+          time_casa_id,
+          time_visitante_id,
+          gols_casa,
+          gols_visitante,
+          data_jogo,
+          horario,
+          local,
+          status,
 
-        time_casa:times!jogos_time_casa_id_fkey (
-          id,
-          nome,
-          sigla,
-          escudo_url
-        ),
+          campeonato:campeonatos (
+            id,
+            nome,
+            ano,
+            temporada,
+            logo_url
+          ),
 
-        time_visitante:times!jogos_time_visitante_id_fkey (
-          id,
-          nome,
-          sigla,
-          escudo_url
-        )
-      `)
-      .order("data_jogo", { ascending: true })
-      .order("horario", { ascending: true });
+          time_casa:times!jogos_time_casa_id_fkey (
+            id,
+            nome,
+            sigla,
+            escudo_url
+          ),
+
+          time_visitante:times!jogos_time_visitante_id_fkey (
+            id,
+            nome,
+            sigla,
+            escudo_url
+          )
+        `)
+        .order("data_jogo", {
+          ascending: true,
+        })
+        .order("horario", {
+          ascending: true,
+        });
 
     if (error) {
-      console.error("Erro ao carregar jogos:", error);
-      setMensagem(`Erro ao carregar jogos: ${error.message}`);
+      console.error(
+        "Erro ao carregar jogos:",
+        error
+      );
+
+      setMensagem(
+        `Erro ao carregar jogos: ${error.message}`
+      );
+
       return;
     }
 
-    setJogos((data ?? []) as unknown as Jogo[]);
+    setJogos(
+      (data ?? []) as unknown as Jogo[]
+    );
   }
 
   useEffect(() => {
     carregarCampeonatos();
     carregarTimes();
     carregarJogos();
+
+    const parametros =
+      new URLSearchParams(
+        window.location.search
+      );
+
+    const campeonatoUrl =
+      parametros.get(
+        "campeonato"
+      ) || "";
+
+    if (campeonatoUrl) {
+      setCampeonatoId(
+        campeonatoUrl
+      );
+
+      setFiltroCampeonatoId(
+        campeonatoUrl
+      );
+    }
   }, []);
 
-  const timesDoCampeonato = useMemo(() => {
-    if (!campeonatoId) {
-      return [];
-    }
+  const campeonatoSelecionado =
+    useMemo(() => {
+      if (!campeonatoId) {
+        return null;
+      }
 
-    return times.filter(
-      (time) =>
-        Number(time.campeonato_id) === Number(campeonatoId)
-    );
-  }, [times, campeonatoId]);
+      return (
+        campeonatos.find(
+          (campeonato) =>
+            Number(
+              campeonato.id
+            ) ===
+            Number(
+              campeonatoId
+            )
+        ) ?? null
+      );
+    }, [
+      campeonatos,
+      campeonatoId,
+    ]);
 
-  const jogosFiltrados = useMemo(() => {
-    if (!filtroCampeonatoId) {
-      return jogos;
-    }
+  const timesDoCampeonato =
+    useMemo(() => {
+      if (!campeonatoId) {
+        return [];
+      }
 
-    return jogos.filter(
-      (jogo) =>
-        Number(jogo.campeonato_id) === Number(filtroCampeonatoId)
-    );
-  }, [jogos, filtroCampeonatoId]);
+      return times.filter(
+        (time) =>
+          Number(
+            time.campeonato_id
+          ) ===
+          Number(
+            campeonatoId
+          )
+      );
+    }, [
+      times,
+      campeonatoId,
+    ]);
 
-  function selecionarCampeonato(valor: string) {
+  const jogosFiltrados =
+    useMemo(() => {
+      if (
+        !filtroCampeonatoId
+      ) {
+        return jogos;
+      }
+
+      return jogos.filter(
+        (jogo) =>
+          Number(
+            jogo.campeonato_id
+          ) ===
+          Number(
+            filtroCampeonatoId
+          )
+      );
+    }, [
+      jogos,
+      filtroCampeonatoId,
+    ]);
+
+  function selecionarCampeonato(
+    valor: string
+  ) {
     setCampeonatoId(valor);
+
+    setFiltroCampeonatoId(
+      valor
+    );
+
     setTimeCasaId("");
     setTimeVisitanteId("");
+
     setMensagem("");
+  }
+
+  function obterCampeonato(
+    jogo: Jogo
+  ): CampeonatoRelacionado | null {
+    if (!jogo.campeonato) {
+      return null;
+    }
+
+    if (
+      Array.isArray(
+        jogo.campeonato
+      )
+    ) {
+      return (
+        jogo.campeonato[0] ??
+        null
+      );
+    }
+
+    return jogo.campeonato;
+  }
+
+  function obterTimeCasa(
+    jogo: Jogo
+  ): TimeRelacionado | null {
+    if (!jogo.time_casa) {
+      return null;
+    }
+
+    if (
+      Array.isArray(
+        jogo.time_casa
+      )
+    ) {
+      return (
+        jogo.time_casa[0] ??
+        null
+      );
+    }
+
+    return jogo.time_casa;
+  }
+
+  function obterTimeVisitante(
+    jogo: Jogo
+  ): TimeRelacionado | null {
+    if (
+      !jogo.time_visitante
+    ) {
+      return null;
+    }
+
+    if (
+      Array.isArray(
+        jogo.time_visitante
+      )
+    ) {
+      return (
+        jogo.time_visitante[0] ??
+        null
+      );
+    }
+
+    return jogo.time_visitante;
   }
 
   async function cadastrarJogo() {
     setMensagem("");
 
     if (!campeonatoId) {
-      setMensagem("Selecione o campeonato.");
+      setMensagem(
+        "Selecione o campeonato."
+      );
+
       return;
     }
 
     if (!timeCasaId) {
-      setMensagem("Selecione o time da casa.");
+      setMensagem(
+        "Selecione o time da casa."
+      );
+
       return;
     }
 
     if (!timeVisitanteId) {
-      setMensagem("Selecione o time visitante.");
-      return;
-    }
-
-    if (timeCasaId === timeVisitanteId) {
       setMensagem(
-        "O time da casa e o visitante não podem ser o mesmo."
+        "Selecione o time visitante."
       );
-      return;
-    }
 
-    if (!dataJogo) {
-      setMensagem("Informe a data do jogo.");
-      return;
-    }
-
-    const timeCasa = times.find(
-      (time) => Number(time.id) === Number(timeCasaId)
-    );
-
-    const timeVisitante = times.find(
-      (time) => Number(time.id) === Number(timeVisitanteId)
-    );
-
-    if (!timeCasa || !timeVisitante) {
-      setMensagem("Um dos times selecionados não foi encontrado.");
       return;
     }
 
     if (
-      Number(timeCasa.campeonato_id) !== Number(campeonatoId) ||
-      Number(timeVisitante.campeonato_id) !== Number(campeonatoId)
+      timeCasaId ===
+      timeVisitanteId
+    ) {
+      setMensagem(
+        "O time da casa e o visitante não podem ser o mesmo."
+      );
+
+      return;
+    }
+
+    if (!dataJogo) {
+      setMensagem(
+        "Informe a data do jogo."
+      );
+
+      return;
+    }
+
+    const timeCasa =
+      times.find(
+        (time) =>
+          Number(time.id) ===
+          Number(timeCasaId)
+      );
+
+    const timeVisitante =
+      times.find(
+        (time) =>
+          Number(time.id) ===
+          Number(
+            timeVisitanteId
+          )
+      );
+
+    if (
+      !timeCasa ||
+      !timeVisitante
+    ) {
+      setMensagem(
+        "Um dos times selecionados não foi encontrado."
+      );
+
+      return;
+    }
+
+    if (
+      Number(
+        timeCasa.campeonato_id
+      ) !==
+        Number(
+          campeonatoId
+        ) ||
+      Number(
+        timeVisitante
+          .campeonato_id
+      ) !==
+        Number(
+          campeonatoId
+        )
     ) {
       setMensagem(
         "Os dois times precisam pertencer ao campeonato selecionado."
       );
+
       return;
     }
 
     setCarregando(true);
 
-    const { error } = await supabase
-      .from("jogos")
-      .insert([
-        {
-          campeonato_id: Number(campeonatoId),
-          time_casa_id: Number(timeCasaId),
-          time_visitante_id: Number(timeVisitanteId),
-          gols_casa: 0,
-          gols_visitante: 0,
-          data_jogo: dataJogo,
-          horario: horario || null,
-          local: local.trim() || null,
-          status,
-        },
-      ]);
+    const { error } =
+      await supabase
+        .from("jogos")
+        .insert([
+          {
+            campeonato_id:
+              Number(
+                campeonatoId
+              ),
+
+            time_casa_id:
+              Number(
+                timeCasaId
+              ),
+
+            time_visitante_id:
+              Number(
+                timeVisitanteId
+              ),
+
+            gols_casa: 0,
+
+            gols_visitante: 0,
+
+            data_jogo:
+              dataJogo,
+
+            horario:
+              horario || null,
+
+            local:
+              local.trim() ||
+              null,
+
+            status,
+          },
+        ]);
 
     setCarregando(false);
 
     if (error) {
-      console.error("Erro ao cadastrar jogo:", error);
-      setMensagem(`Erro ao cadastrar jogo: ${error.message}`);
+      console.error(
+        "Erro ao cadastrar jogo:",
+        error
+      );
+
+      setMensagem(
+        `Erro ao cadastrar jogo: ${error.message}`
+      );
+
       return;
     }
 
@@ -299,15 +617,37 @@ export default function AdminJogosPage() {
     setLocal("");
     setStatus("agendado");
 
-    setMensagem("Partida cadastrada com sucesso.");
+    setFiltroCampeonatoId(
+      campeonatoId
+    );
+
+    setMensagem(
+      "Partida cadastrada com sucesso."
+    );
 
     await carregarJogos();
   }
 
-  function abrirResultado(jogo: Jogo) {
-    setJogoResultadoId(jogo.id);
-    setGolsCasa(String(jogo.gols_casa ?? 0));
-    setGolsVisitante(String(jogo.gols_visitante ?? 0));
+  function abrirResultado(
+    jogo: Jogo
+  ) {
+    setJogoResultadoId(
+      jogo.id
+    );
+
+    setGolsCasa(
+      String(
+        jogo.gols_casa ?? 0
+      )
+    );
+
+    setGolsVisitante(
+      String(
+        jogo.gols_visitante ??
+          0
+      )
+    );
+
     setMensagem("");
   }
 
@@ -317,84 +657,149 @@ export default function AdminJogosPage() {
     setGolsVisitante("");
   }
 
-  async function salvarResultado(jogo: Jogo) {
-    if (golsCasa === "" || golsVisitante === "") {
-      setMensagem("Informe o placar completo.");
+  async function salvarResultado(
+    jogo: Jogo
+  ) {
+    if (
+      golsCasa === "" ||
+      golsVisitante === ""
+    ) {
+      setMensagem(
+        "Informe o placar completo."
+      );
+
       return;
     }
 
-    const golsCasaNumero = Number(golsCasa);
-    const golsVisitanteNumero = Number(golsVisitante);
+    const golsCasaNumero =
+      Number(golsCasa);
+
+    const golsVisitanteNumero =
+      Number(
+        golsVisitante
+      );
 
     if (
-      Number.isNaN(golsCasaNumero) ||
-      Number.isNaN(golsVisitanteNumero) ||
+      Number.isNaN(
+        golsCasaNumero
+      ) ||
+      Number.isNaN(
+        golsVisitanteNumero
+      ) ||
       golsCasaNumero < 0 ||
-      golsVisitanteNumero < 0 ||
-      !Number.isInteger(golsCasaNumero) ||
-      !Number.isInteger(golsVisitanteNumero)
+      golsVisitanteNumero <
+        0 ||
+      !Number.isInteger(
+        golsCasaNumero
+      ) ||
+      !Number.isInteger(
+        golsVisitanteNumero
+      )
     ) {
-      setMensagem("Informe um placar válido.");
+      setMensagem(
+        "Informe um placar válido."
+      );
+
       return;
     }
 
-    const { error } = await supabase
-      .from("jogos")
-      .update({
-        gols_casa: golsCasaNumero,
-        gols_visitante: golsVisitanteNumero,
-        status: "finalizado",
-      })
-      .eq("id", jogo.id);
+    const { error } =
+      await supabase
+        .from("jogos")
+        .update({
+          gols_casa:
+            golsCasaNumero,
+
+          gols_visitante:
+            golsVisitanteNumero,
+
+          status:
+            "finalizado",
+        })
+        .eq(
+          "id",
+          jogo.id
+        );
 
     if (error) {
-      console.error("Erro ao salvar resultado:", error);
+      console.error(
+        "Erro ao salvar resultado:",
+        error
+      );
+
       setMensagem(
         `Erro ao salvar resultado: ${error.message}`
       );
+
       return;
     }
 
-    setMensagem("Resultado salvo com sucesso.");
+    setMensagem(
+      "Resultado salvo com sucesso."
+    );
+
     cancelarResultado();
+
     await carregarJogos();
   }
 
-  async function excluirJogo(id: number) {
-    const confirmou = window.confirm(
-      "Tem certeza que deseja excluir esta partida?"
-    );
+  async function excluirJogo(
+    id: number
+  ) {
+    const confirmou =
+      window.confirm(
+        "Tem certeza que deseja excluir esta partida?"
+      );
 
     if (!confirmou) {
       return;
     }
 
-    const { error } = await supabase
-      .from("jogos")
-      .delete()
-      .eq("id", id);
+    const { error } =
+      await supabase
+        .from("jogos")
+        .delete()
+        .eq("id", id);
 
     if (error) {
-      console.error("Erro ao excluir jogo:", error);
-      setMensagem(`Erro ao excluir jogo: ${error.message}`);
+      console.error(
+        "Erro ao excluir jogo:",
+        error
+      );
+
+      setMensagem(
+        `Erro ao excluir jogo: ${error.message}`
+      );
+
       return;
     }
 
-    setMensagem("Partida excluída com sucesso.");
+    setMensagem(
+      "Partida excluída com sucesso."
+    );
+
     await carregarJogos();
   }
 
-  function formatarData(data: string | null) {
+  function formatarData(
+    data: string | null
+  ) {
     if (!data) {
       return "Data não informada";
     }
 
-    const [ano, mes, dia] = data.split("-");
+    const [
+      ano,
+      mes,
+      dia,
+    ] = data.split("-");
 
     return `${dia}/${mes}/${ano}`;
   }
 
-  function formatarHorario(valor: string | null) {
+  function formatarHorario(
+    valor: string | null
+  ) {
     if (!valor) {
       return "";
     }
@@ -402,34 +807,46 @@ export default function AdminJogosPage() {
     return valor.slice(0, 5);
   }
 
-  function nomeStatus(valor: string | null) {
+  function nomeStatus(
+    valor: string | null
+  ) {
     return (
       STATUS_OPCOES.find(
-        (item) => item.value === valor
+        (item) =>
+          item.value === valor
       )?.label ||
       valor ||
       "Agendado"
     );
   }
 
-  function nomeCampeonato(jogo: Jogo) {
-    if (!jogo.campeonato) {
+  function nomeCampeonato(
+    jogo: Jogo
+  ) {
+    const campeonato =
+      obterCampeonato(jogo);
+
+    if (!campeonato) {
       return "Sem campeonato";
     }
 
     const temporada =
-      jogo.campeonato.ano ?? jogo.campeonato.temporada;
+      campeonato.ano ??
+      campeonato.temporada;
 
     return temporada
-      ? `${jogo.campeonato.nome} • ${temporada}`
-      : jogo.campeonato.nome;
+      ? `${campeonato.nome} • ${temporada}`
+      : campeonato.nome;
   }
 
   return (
-    <main className="min-h-screen bg-[#07140B] px-4 py-8 text-white sm:px-6 lg:px-8">
+    <main className="min-h-screen px-4 py-8 text-white sm:px-6 lg:px-8">
       <div className="mx-auto max-w-7xl">
+
+        {/* CABEÇALHO */}
+
         <header className="mb-8">
-          <p className="text-sm font-bold uppercase tracking-[0.22em] text-[#34C759]">
+          <p className="text-sm font-bold uppercase tracking-[0.22em] text-[#18C929]">
             FJU Esportes
           </p>
 
@@ -438,48 +855,94 @@ export default function AdminJogosPage() {
           </h1>
 
           <p className="mt-2 max-w-2xl text-sm text-white/50 sm:text-base">
-            Cadastre partidas por campeonato e lance os resultados.
+            Cadastre partidas
+            por campeonato e
+            lance os resultados.
           </p>
+
+          {campeonatoSelecionado && (
+            <div className="mt-4 inline-flex items-center gap-2 rounded-full border border-[#18C929]/20 bg-[#18C929]/10 px-3 py-1.5 text-xs font-bold text-[#18C929]">
+              Campeonato
+              selecionado:
+
+              <span className="text-white">
+                {
+                  campeonatoSelecionado.nome
+                }
+              </span>
+            </div>
+          )}
         </header>
 
         <div className="grid gap-6 lg:grid-cols-[420px_1fr]">
-          <section className="rounded-3xl border border-white/10 bg-[#0D1F12] p-5 sm:p-6">
-            <h2 className="text-xl font-bold">
-              Nova partida
-            </h2>
+
+          {/* CADASTRO */}
+
+          <section className="rounded-3xl border border-white/[0.08] bg-[#0D1F12] p-5 sm:p-6">
+
+            <div className="flex items-center gap-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#18C929]/10 text-[#18C929]">
+                <CalendarDays
+                  size={21}
+                />
+              </div>
+
+              <h2 className="text-xl font-black">
+                Nova partida
+              </h2>
+            </div>
 
             <div className="mt-6 space-y-5">
+
+              {/* CAMPEONATO */}
+
               <div>
                 <label className="mb-2 block text-sm text-white/60">
                   Campeonato
                 </label>
 
                 <select
-                  value={campeonatoId}
-                  onChange={(e) =>
-                    selecionarCampeonato(e.target.value)
+                  value={
+                    campeonatoId
                   }
-                  className="w-full rounded-xl border border-white/10 bg-[#17351D] px-4 py-3 outline-none focus:border-[#34C759]"
+                  onChange={(e) =>
+                    selecionarCampeonato(
+                      e.target.value
+                    )
+                  }
+                  className="w-full rounded-xl border border-white/10 bg-[#17351D] px-4 py-3 outline-none focus:border-[#18C929]"
                 >
                   <option value="">
-                    Selecione o campeonato
+                    Selecione o
+                    campeonato
                   </option>
 
-                  {campeonatos.map((campeonato) => (
-                    <option
-                      key={campeonato.id}
-                      value={campeonato.id}
-                    >
-                      {campeonato.nome}
-                      {campeonato.ano
-                        ? ` - ${campeonato.ano}`
-                        : campeonato.temporada
-                          ? ` - ${campeonato.temporada}`
-                          : ""}
-                    </option>
-                  ))}
+                  {campeonatos.map(
+                    (campeonato) => (
+                      <option
+                        key={
+                          campeonato.id
+                        }
+                        value={
+                          campeonato.id
+                        }
+                      >
+                        {
+                          campeonato.nome
+                        }
+
+                        {campeonato.ano
+                          ? ` - ${campeonato.ano}`
+                          : campeonato.temporada
+                            ? ` - ${campeonato.temporada}`
+                            : ""}
+                      </option>
+                    )
+                  )}
                 </select>
               </div>
+
+              {/* TIME CASA */}
 
               <div>
                 <label className="mb-2 block text-sm text-white/60">
@@ -487,38 +950,53 @@ export default function AdminJogosPage() {
                 </label>
 
                 <select
-                  value={timeCasaId}
-                  onChange={(e) =>
-                    setTimeCasaId(e.target.value)
+                  value={
+                    timeCasaId
                   }
-                  disabled={!campeonatoId}
-                  className="w-full rounded-xl border border-white/10 bg-[#17351D] px-4 py-3 outline-none focus:border-[#34C759] disabled:cursor-not-allowed disabled:opacity-40"
+                  onChange={(e) =>
+                    setTimeCasaId(
+                      e.target.value
+                    )
+                  }
+                  disabled={
+                    !campeonatoId
+                  }
+                  className="w-full rounded-xl border border-white/10 bg-[#17351D] px-4 py-3 outline-none focus:border-[#18C929] disabled:cursor-not-allowed disabled:opacity-40"
                 >
                   <option value="">
                     Selecione o time
                   </option>
 
-                  {timesDoCampeonato.map((time) => (
-                    <option
-                      key={time.id}
-                      value={time.id}
-                      disabled={
-                        Number(time.id) ===
-                        Number(timeVisitanteId)
-                      }
-                    >
-                      {time.nome}
-                      {time.sigla
-                        ? ` (${time.sigla})`
-                        : ""}
-                    </option>
-                  ))}
+                  {timesDoCampeonato.map(
+                    (time) => (
+                      <option
+                        key={time.id}
+                        value={time.id}
+                        disabled={
+                          Number(
+                            time.id
+                          ) ===
+                          Number(
+                            timeVisitanteId
+                          )
+                        }
+                      >
+                        {time.nome}
+
+                        {time.sigla
+                          ? ` (${time.sigla})`
+                          : ""}
+                      </option>
+                    )
+                  )}
                 </select>
               </div>
 
-              <div className="text-center text-2xl font-black text-[#34C759]">
+              <div className="text-center text-2xl font-black text-[#18C929]">
                 X
               </div>
+
+              {/* VISITANTE */}
 
               <div>
                 <label className="mb-2 block text-sm text-white/60">
@@ -526,43 +1004,63 @@ export default function AdminJogosPage() {
                 </label>
 
                 <select
-                  value={timeVisitanteId}
-                  onChange={(e) =>
-                    setTimeVisitanteId(e.target.value)
+                  value={
+                    timeVisitanteId
                   }
-                  disabled={!campeonatoId}
-                  className="w-full rounded-xl border border-white/10 bg-[#17351D] px-4 py-3 outline-none focus:border-[#34C759] disabled:cursor-not-allowed disabled:opacity-40"
+                  onChange={(e) =>
+                    setTimeVisitanteId(
+                      e.target.value
+                    )
+                  }
+                  disabled={
+                    !campeonatoId
+                  }
+                  className="w-full rounded-xl border border-white/10 bg-[#17351D] px-4 py-3 outline-none focus:border-[#18C929] disabled:cursor-not-allowed disabled:opacity-40"
                 >
                   <option value="">
                     Selecione o time
                   </option>
 
-                  {timesDoCampeonato.map((time) => (
-                    <option
-                      key={time.id}
-                      value={time.id}
-                      disabled={
-                        Number(time.id) ===
-                        Number(timeCasaId)
-                      }
-                    >
-                      {time.nome}
-                      {time.sigla
-                        ? ` (${time.sigla})`
-                        : ""}
-                    </option>
-                  ))}
+                  {timesDoCampeonato.map(
+                    (time) => (
+                      <option
+                        key={time.id}
+                        value={time.id}
+                        disabled={
+                          Number(
+                            time.id
+                          ) ===
+                          Number(
+                            timeCasaId
+                          )
+                        }
+                      >
+                        {time.nome}
+
+                        {time.sigla
+                          ? ` (${time.sigla})`
+                          : ""}
+                      </option>
+                    )
+                  )}
                 </select>
               </div>
 
               {campeonatoId &&
-                timesDoCampeonato.length < 2 && (
+                timesDoCampeonato.length <
+                  2 && (
                   <div className="rounded-xl border border-amber-400/20 bg-amber-400/10 p-3 text-sm text-amber-200">
-                    Este campeonato precisa ter pelo menos 2 times cadastrados.
+                    Este campeonato
+                    precisa ter pelo
+                    menos 2 times
+                    cadastrados.
                   </div>
                 )}
 
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              {/* DATA E HORA */}
+
+              <div className="grid gap-4 sm:grid-cols-2">
+
                 <div>
                   <label className="mb-2 block text-sm text-white/60">
                     Data
@@ -570,11 +1068,15 @@ export default function AdminJogosPage() {
 
                   <input
                     type="date"
-                    value={dataJogo}
-                    onChange={(e) =>
-                      setDataJogo(e.target.value)
+                    value={
+                      dataJogo
                     }
-                    className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 outline-none focus:border-[#34C759]"
+                    onChange={(e) =>
+                      setDataJogo(
+                        e.target.value
+                      )
+                    }
+                    className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 outline-none focus:border-[#18C929]"
                   />
                 </div>
 
@@ -585,14 +1087,20 @@ export default function AdminJogosPage() {
 
                   <input
                     type="time"
-                    value={horario}
-                    onChange={(e) =>
-                      setHorario(e.target.value)
+                    value={
+                      horario
                     }
-                    className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 outline-none focus:border-[#34C759]"
+                    onChange={(e) =>
+                      setHorario(
+                        e.target.value
+                      )
+                    }
+                    className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 outline-none focus:border-[#18C929]"
                   />
                 </div>
               </div>
+
+              {/* LOCAL */}
 
               <div>
                 <label className="mb-2 block text-sm text-white/60">
@@ -603,12 +1111,16 @@ export default function AdminJogosPage() {
                   type="text"
                   value={local}
                   onChange={(e) =>
-                    setLocal(e.target.value)
+                    setLocal(
+                      e.target.value
+                    )
                   }
                   placeholder="Ex: Arena Municipal"
-                  className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 outline-none placeholder:text-white/25 focus:border-[#34C759]"
+                  className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 outline-none placeholder:text-white/25 focus:border-[#18C929]"
                 />
               </div>
+
+              {/* STATUS */}
 
               <div>
                 <label className="mb-2 block text-sm text-white/60">
@@ -618,30 +1130,41 @@ export default function AdminJogosPage() {
                 <select
                   value={status}
                   onChange={(e) =>
-                    setStatus(e.target.value)
+                    setStatus(
+                      e.target.value
+                    )
                   }
-                  className="w-full rounded-xl border border-white/10 bg-[#17351D] px-4 py-3 outline-none focus:border-[#34C759]"
+                  className="w-full rounded-xl border border-white/10 bg-[#17351D] px-4 py-3 outline-none focus:border-[#18C929]"
                 >
-                  {STATUS_OPCOES.map((item) => (
-                    <option
-                      key={item.value}
-                      value={item.value}
-                    >
-                      {item.label}
-                    </option>
-                  ))}
+                  {STATUS_OPCOES.map(
+                    (item) => (
+                      <option
+                        key={
+                          item.value
+                        }
+                        value={
+                          item.value
+                        }
+                      >
+                        {item.label}
+                      </option>
+                    )
+                  )}
                 </select>
               </div>
 
               <button
                 type="button"
-                onClick={cadastrarJogo}
+                onClick={
+                  cadastrarJogo
+                }
                 disabled={
                   carregando ||
                   !campeonatoId ||
-                  timesDoCampeonato.length < 2
+                  timesDoCampeonato.length <
+                    2
                 }
-                className="w-full rounded-xl bg-[#00A500] px-4 py-3 font-black text-white transition hover:bg-[#14B814] disabled:cursor-not-allowed disabled:opacity-50"
+                className="w-full rounded-xl bg-[#18C929] px-4 py-3 font-black text-black transition hover:bg-[#2DDF3B] disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {carregando
                   ? "Cadastrando..."
@@ -656,225 +1179,343 @@ export default function AdminJogosPage() {
             </div>
           </section>
 
-          <section className="rounded-3xl border border-white/10 bg-[#0D1F12] p-5 sm:p-6">
-            <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-              <div>
-                <h2 className="text-xl font-bold">
-                  Partidas cadastradas
-                </h2>
+          {/* PARTIDAS */}
 
-                <p className="mt-1 text-sm text-white/40">
-                  {jogosFiltrados.length} partida(s)
-                </p>
+          <section className="rounded-3xl border border-white/[0.08] bg-[#0D1F12] p-5 sm:p-6">
+
+            <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+
+              <div>
+                <div className="flex items-center gap-3">
+
+                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#18C929]/10 text-[#18C929]">
+                    <Trophy
+                      size={21}
+                    />
+                  </div>
+
+                  <div>
+                    <h2 className="text-xl font-black">
+                      Partidas cadastradas
+                    </h2>
+
+                    <p className="mt-1 text-sm text-white/40">
+                      {
+                        jogosFiltrados.length
+                      }{" "}
+                      partida(s)
+                    </p>
+                  </div>
+                </div>
               </div>
 
               <div className="w-full sm:w-72">
+
                 <label className="mb-2 block text-xs text-white/40">
-                  Filtrar campeonato
+                  Filtrar
+                  campeonato
                 </label>
 
                 <select
-                  value={filtroCampeonatoId}
-                  onChange={(e) =>
-                    setFiltroCampeonatoId(e.target.value)
+                  value={
+                    filtroCampeonatoId
                   }
-                  className="w-full rounded-xl border border-white/10 bg-[#17351D] px-4 py-3 text-sm outline-none focus:border-[#34C759]"
+                  onChange={(e) =>
+                    setFiltroCampeonatoId(
+                      e.target.value
+                    )
+                  }
+                  className="w-full rounded-xl border border-white/10 bg-[#17351D] px-4 py-3 text-sm outline-none focus:border-[#18C929]"
                 >
                   <option value="">
-                    Todos os campeonatos
+                    Todos os
+                    campeonatos
                   </option>
 
-                  {campeonatos.map((campeonato) => (
-                    <option
-                      key={campeonato.id}
-                      value={campeonato.id}
-                    >
-                      {campeonato.nome}
-                    </option>
-                  ))}
+                  {campeonatos.map(
+                    (campeonato) => (
+                      <option
+                        key={
+                          campeonato.id
+                        }
+                        value={
+                          campeonato.id
+                        }
+                      >
+                        {
+                          campeonato.nome
+                        }
+                      </option>
+                    )
+                  )}
                 </select>
               </div>
             </div>
 
-            {jogosFiltrados.length === 0 ? (
+            {jogosFiltrados.length ===
+            0 ? (
               <div className="rounded-2xl border border-dashed border-white/10 p-10 text-center text-white/40">
-                Nenhuma partida encontrada.
+                Nenhuma partida
+                encontrada.
               </div>
             ) : (
               <div className="space-y-4">
-                {jogosFiltrados.map((jogo) => (
-                  <article
-                    key={jogo.id}
-                    className="rounded-2xl border border-white/10 bg-white/[0.03] p-4 sm:p-5"
-                  >
-                    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                      <div>
-                        <p className="text-xs font-bold text-[#34C759]">
-                          {nomeCampeonato(jogo)}
-                        </p>
+                {jogosFiltrados.map(
+                  (jogo) => {
+                    const timeCasa =
+                      obterTimeCasa(
+                        jogo
+                      );
 
-                        <span className="mt-2 inline-flex rounded-full bg-white/5 px-3 py-1 text-xs font-semibold text-white/50">
-                          {nomeStatus(jogo.status)}
-                        </span>
-                      </div>
+                    const timeVisitante =
+                      obterTimeVisitante(
+                        jogo
+                      );
 
-                      <span className="text-xs text-white/40">
-                        {formatarData(jogo.data_jogo)}
+                    return (
+                      <article
+                        key={
+                          jogo.id
+                        }
+                        className="rounded-2xl border border-white/10 bg-white/[0.03] p-4 sm:p-5"
+                      >
 
-                        {jogo.horario
-                          ? ` • ${formatarHorario(jogo.horario)}`
-                          : ""}
-                      </span>
-                    </div>
+                        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
 
-                    <div className="mt-6 grid grid-cols-[1fr_auto_1fr] items-center gap-2 sm:gap-5">
-                      <div className="min-w-0 text-center">
-                        {jogo.time_casa?.escudo_url ? (
-                          <img
-                            src={jogo.time_casa.escudo_url}
-                            alt={jogo.time_casa.nome}
-                            className="mx-auto h-14 w-14 object-contain sm:h-16 sm:w-16"
-                          />
-                        ) : (
-                          <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-white/10 text-sm font-bold sm:h-16 sm:w-16">
-                            {jogo.time_casa?.sigla?.slice(0, 3) || "FC"}
-                          </div>
-                        )}
+                          <div>
+                            <p className="text-xs font-bold text-[#18C929]">
+                              {nomeCampeonato(
+                                jogo
+                              )}
+                            </p>
 
-                        <p className="mt-3 truncate text-sm font-bold sm:text-base">
-                          {jogo.time_casa?.nome || "Time"}
-                        </p>
-                      </div>
-
-                      <div className="text-center">
-                        {jogo.status === "finalizado" ? (
-                          <div className="whitespace-nowrap text-2xl font-black sm:text-3xl">
-                            {jogo.gols_casa ?? 0}
-
-                            <span className="mx-2 text-white/30">
-                              ×
+                            <span className="mt-2 inline-flex rounded-full bg-white/5 px-3 py-1 text-xs font-semibold text-white/50">
+                              {nomeStatus(
+                                jogo.status
+                              )}
                             </span>
-
-                            {jogo.gols_visitante ?? 0}
                           </div>
-                        ) : (
-                          <span className="text-2xl font-black text-[#34C759] sm:text-3xl">
-                            X
+
+                          <span className="text-xs text-white/40">
+                            {formatarData(
+                              jogo.data_jogo
+                            )}
+
+                            {jogo.horario
+                              ? ` • ${formatarHorario(
+                                  jogo.horario
+                                )}`
+                              : ""}
                           </span>
-                        )}
-                      </div>
+                        </div>
 
-                      <div className="min-w-0 text-center">
-                        {jogo.time_visitante?.escudo_url ? (
-                          <img
-                            src={jogo.time_visitante.escudo_url}
-                            alt={jogo.time_visitante.nome}
-                            className="mx-auto h-14 w-14 object-contain sm:h-16 sm:w-16"
-                          />
-                        ) : (
-                          <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-white/10 text-sm font-bold sm:h-16 sm:w-16">
-                            {jogo.time_visitante?.sigla?.slice(0, 3) || "FC"}
-                          </div>
-                        )}
+                        <div className="mt-6 grid grid-cols-[1fr_auto_1fr] items-center gap-2 sm:gap-5">
 
-                        <p className="mt-3 truncate text-sm font-bold sm:text-base">
-                          {jogo.time_visitante?.nome || "Time"}
-                        </p>
-                      </div>
-                    </div>
+                          {/* CASA */}
 
-                    {jogo.local && (
-                      <p className="mt-4 text-center text-sm text-white/40">
-                        {jogo.local}
-                      </p>
-                    )}
-
-                    {jogoResultadoId === jogo.id ? (
-                      <div className="mt-5 rounded-2xl border border-[#34C759]/20 bg-[#34C759]/5 p-4">
-                        <p className="mb-4 text-sm font-bold text-[#34C759]">
-                          Lançar resultado
-                        </p>
-
-                        <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-3">
-                          <input
-                            type="number"
-                            min="0"
-                            step="1"
-                            value={golsCasa}
-                            onChange={(e) =>
-                              setGolsCasa(e.target.value)
+                          <TimePartida
+                            time={
+                              timeCasa
                             }
-                            className="min-w-0 rounded-xl border border-white/10 bg-white/5 px-2 py-3 text-center text-xl font-black outline-none focus:border-[#34C759]"
                           />
 
-                          <span className="font-black text-white/30">
-                            ×
-                          </span>
+                          {/* PLACAR */}
 
-                          <input
-                            type="number"
-                            min="0"
-                            step="1"
-                            value={golsVisitante}
-                            onChange={(e) =>
-                              setGolsVisitante(e.target.value)
+                          <div className="text-center">
+
+                            {jogo.status ===
+                            "finalizado" ? (
+                              <div className="whitespace-nowrap text-2xl font-black sm:text-3xl">
+                                {jogo.gols_casa ??
+                                  0}
+
+                                <span className="mx-2 text-white/30">
+                                  ×
+                                </span>
+
+                                {jogo.gols_visitante ??
+                                  0}
+                              </div>
+                            ) : (
+                              <span className="text-2xl font-black text-[#18C929] sm:text-3xl">
+                                X
+                              </span>
+                            )}
+                          </div>
+
+                          {/* VISITANTE */}
+
+                          <TimePartida
+                            time={
+                              timeVisitante
                             }
-                            className="min-w-0 rounded-xl border border-white/10 bg-white/5 px-2 py-3 text-center text-xl font-black outline-none focus:border-[#34C759]"
                           />
                         </div>
 
-                        <div className="mt-4 flex flex-col gap-3 sm:flex-row">
-                          <button
-                            type="button"
-                            onClick={() =>
-                              salvarResultado(jogo)
+                        {jogo.local && (
+                          <p className="mt-4 flex items-center justify-center gap-2 text-center text-sm text-white/40">
+                            <MapPin
+                              size={14}
+                            />
+
+                            {
+                              jogo.local
                             }
-                            className="flex-1 rounded-xl bg-[#00A500] px-4 py-3 font-bold text-white hover:bg-[#14B814]"
-                          >
-                            Salvar resultado
-                          </button>
+                          </p>
+                        )}
 
-                          <button
-                            type="button"
-                            onClick={cancelarResultado}
-                            className="rounded-xl border border-white/10 px-4 py-3 text-sm text-white/60 hover:bg-white/5"
-                          >
-                            Cancelar
-                          </button>
-                        </div>
-                      </div>
-                    ) : (
-                      <div className="mt-5 flex flex-col gap-3 sm:flex-row">
-                        <button
-                          type="button"
-                          onClick={() =>
-                            abrirResultado(jogo)
-                          }
-                          className="flex-1 rounded-xl bg-[#00A500]/15 px-4 py-3 text-sm font-bold text-[#34C759] hover:bg-[#00A500]/25"
-                        >
-                          {jogo.status === "finalizado"
-                            ? "Editar resultado"
-                            : "Lançar resultado"}
-                        </button>
+                        {jogoResultadoId ===
+                        jogo.id ? (
+                          <div className="mt-5 rounded-2xl border border-[#18C929]/20 bg-[#18C929]/5 p-4">
 
-                        <button
-                          type="button"
-                          onClick={() =>
-                            excluirJogo(jogo.id)
-                          }
-                          className="rounded-xl border border-red-400/20 bg-red-400/10 px-4 py-3 text-sm font-bold text-red-300 hover:bg-red-400/20"
-                        >
-                          Excluir
-                        </button>
-                      </div>
-                    )}
-                  </article>
-                ))}
+                            <p className="mb-4 text-sm font-bold text-[#18C929]">
+                              Lançar resultado
+                            </p>
+
+                            <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-3">
+
+                              <input
+                                type="number"
+                                min="0"
+                                step="1"
+                                value={
+                                  golsCasa
+                                }
+                                onChange={(e) =>
+                                  setGolsCasa(
+                                    e.target.value
+                                  )
+                                }
+                                className="min-w-0 rounded-xl border border-white/10 bg-white/5 px-2 py-3 text-center text-xl font-black outline-none focus:border-[#18C929]"
+                              />
+
+                              <span className="font-black text-white/30">
+                                ×
+                              </span>
+
+                              <input
+                                type="number"
+                                min="0"
+                                step="1"
+                                value={
+                                  golsVisitante
+                                }
+                                onChange={(e) =>
+                                  setGolsVisitante(
+                                    e.target.value
+                                  )
+                                }
+                                className="min-w-0 rounded-xl border border-white/10 bg-white/5 px-2 py-3 text-center text-xl font-black outline-none focus:border-[#18C929]"
+                              />
+                            </div>
+
+                            <div className="mt-4 flex flex-col gap-3 sm:flex-row">
+
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  salvarResultado(
+                                    jogo
+                                  )
+                                }
+                                className="flex-1 rounded-xl bg-[#18C929] px-4 py-3 font-black text-black transition hover:bg-[#2DDF3B]"
+                              >
+                                Salvar resultado
+                              </button>
+
+                              <button
+                                type="button"
+                                onClick={
+                                  cancelarResultado
+                                }
+                                className="rounded-xl border border-white/10 px-4 py-3 text-sm text-white/60 hover:bg-white/5"
+                              >
+                                Cancelar
+                              </button>
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="mt-5 flex flex-col gap-3 sm:flex-row">
+
+                            <button
+                              type="button"
+                              onClick={() =>
+                                abrirResultado(
+                                  jogo
+                                )
+                              }
+                              className="flex-1 rounded-xl bg-[#18C929]/10 px-4 py-3 text-sm font-bold text-[#18C929] transition hover:bg-[#18C929]/20"
+                            >
+                              {jogo.status ===
+                              "finalizado"
+                                ? "Editar resultado"
+                                : "Lançar resultado"}
+                            </button>
+
+                            <button
+                              type="button"
+                              onClick={() =>
+                                excluirJogo(
+                                  jogo.id
+                                )
+                              }
+                              className="flex items-center justify-center gap-2 rounded-xl border border-red-400/20 bg-red-400/10 px-4 py-3 text-sm font-bold text-red-300 hover:bg-red-400/20"
+                            >
+                              <Trash2
+                                size={
+                                  15
+                                }
+                              />
+
+                              Excluir
+                            </button>
+                          </div>
+                        )}
+                      </article>
+                    );
+                  }
+                )}
               </div>
             )}
           </section>
         </div>
       </div>
     </main>
+  );
+}
+
+function TimePartida({
+  time,
+}: {
+  time: TimeRelacionado | null;
+}) {
+  return (
+    <div className="min-w-0 text-center">
+
+      {time?.escudo_url ? (
+        <img
+          src={
+            time.escudo_url
+          }
+          alt={time.nome}
+          className="mx-auto h-14 w-14 object-contain sm:h-16 sm:w-16"
+        />
+      ) : (
+        <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-[#18C929]/10 text-sm font-black text-[#18C929] sm:h-16 sm:w-16">
+          {time?.sigla?.slice(
+            0,
+            3
+          ) || (
+            <Shield
+              size={20}
+            />
+          )}
+        </div>
+      )}
+
+      <p className="mt-3 truncate text-sm font-bold sm:text-base">
+        {time?.nome || "Time"}
+      </p>
+    </div>
   );
 }
