@@ -176,49 +176,111 @@ export default function AdminCampeonatosPage() {
   }
 
   async function excluirCampeonato(id: number) {
-    const confirmou = window.confirm(
-      "Tem certeza que deseja excluir este campeonato?"
+  setMensagem("");
+
+  const campeonato = campeonatos.find(
+    (item) => item.id === id
+  );
+
+  if (!campeonato) {
+    setMensagem("Campeonato não encontrado.");
+    return;
+  }
+
+  // Primeiro verifica se existem jogos vinculados.
+  const { count, error: jogosError } = await supabase
+    .from("jogos")
+    .select("id", {
+      count: "exact",
+      head: true,
+    })
+    .eq("campeonato_id", id);
+
+  if (jogosError) {
+    console.error(
+      "Erro ao verificar jogos do campeonato:",
+      jogosError
     );
 
-    if (!confirmou) return;
-
-    const campeonato = campeonatos.find(
-      (item) => item.id === id
+    setMensagem(
+      `Erro ao verificar campeonato: ${jogosError.message}`
     );
 
-    if (campeonato?.logo_url) {
-      const marcador =
-        "/storage/v1/object/public/campeonatos/";
+    return;
+  }
 
-      const posicao =
-        campeonato.logo_url.indexOf(marcador);
+  const totalJogos = count ?? 0;
 
-      if (posicao !== -1) {
-        const caminho =
-          campeonato.logo_url.substring(
-            posicao + marcador.length
-          );
+  if (totalJogos > 0) {
+    setMensagem(
+      `Não é possível excluir "${campeonato.nome}" porque existem ${totalJogos} jogo(s) vinculado(s) a este campeonato. Exclua ou mova os jogos primeiro.`
+    );
 
+    return;
+  }
+
+  const confirmou = window.confirm(
+    `Tem certeza que deseja excluir o campeonato "${campeonato.nome}"?`
+  );
+
+  if (!confirmou) {
+    return;
+  }
+
+  // Primeiro excluímos o registro do banco.
+  const { error: excluirError } = await supabase
+    .from("campeonatos")
+    .delete()
+    .eq("id", id);
+
+  if (excluirError) {
+    console.error(
+      "Erro ao excluir campeonato:",
+      excluirError
+    );
+
+    setMensagem(
+      `Erro ao excluir campeonato: ${excluirError.message}`
+    );
+
+    return;
+  }
+
+  // Só depois de excluir o campeonato com sucesso
+  // tentamos remover a logo do Storage.
+  if (campeonato.logo_url) {
+    const marcador =
+      "/storage/v1/object/public/campeonatos/";
+
+    const posicao =
+      campeonato.logo_url.indexOf(marcador);
+
+    if (posicao !== -1) {
+      const caminho =
+        campeonato.logo_url.substring(
+          posicao + marcador.length
+        );
+
+      const { error: storageError } =
         await supabase.storage
           .from("campeonatos")
           .remove([caminho]);
+
+      if (storageError) {
+        console.error(
+          "Campeonato excluído, mas houve erro ao remover a logo:",
+          storageError
+        );
       }
     }
-
-    const { error } = await supabase
-      .from("campeonatos")
-      .delete()
-      .eq("id", id);
-
-    if (error) {
-      setMensagem(`Erro ao excluir: ${error.message}`);
-      return;
-    }
-
-    setMensagem("Campeonato excluído com sucesso.");
-
-    await carregarCampeonatos();
   }
+
+  setMensagem(
+    `"${campeonato.nome}" excluído com sucesso.`
+  );
+
+  await carregarCampeonatos();
+}
 
   return (
     <main className="min-h-screen px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
