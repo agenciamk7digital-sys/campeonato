@@ -49,6 +49,26 @@ const menuPublico: MenuItem[] = [
     icon: Trophy,
   },
   {
+    label: "Times",
+    href: "/times",
+    icon: Shield,
+  },
+  {
+    label: "Jogadores",
+    href: "/jogadores",
+    icon: Users,
+  },
+  {
+    label: "Jogos",
+    href: "/jogos",
+    icon: CalendarDays,
+  },
+  {
+    label: "Eventos",
+    href: "/eventos",
+    icon: Activity,
+  },
+  {
     label: "Classificação",
     href: "/classificacao",
     icon: BarChart3,
